@@ -1,3 +1,4 @@
+/*2053114*/
 grammar MT22;
 
 @lexer::header {
@@ -10,7 +11,7 @@ options{
 
 program:  EOF ;
 
-//---------------------LEXER----------------------//	 
+//--------------------LEXER---------------------//	 
 	/*______________OPERATORS______________*/
 
 ADD: '+';
@@ -84,10 +85,27 @@ OF: 'of';
 INHERIT: 'inherit';
 ARRAY: 'array';
 
-WS : [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
+	/*________________COMMENT________________*/
 
-UNCLOSE_STRING: .;
-ILLEGAL_ESCAPE: .;
+BLOCK_CMT: '/*' (.)+? '*/' -> skip;
+LINE_CMT: '//' ~[\n\r]* -> skip;
+
+	/*______________IDENTIFIERS______________*/
+ID: [a-zA-Z_][a-zA-Z0-9_]*;
+
+WS : [ \b\f\t\r\n]+ -> skip ; // skip spaces, tabs, newlines
+
+UNCLOSE_STRING: '"' (STR_CHAR | ESC_SEQ)* (EOF |'\n') {
+    cont = str(self.text)
+	esc = '\n'
+	if cont[-1] in esc: raise UncloseString(cont[1:-1])
+	else: raise UncloseString(content[1:])
+};
+
+ILLEGAL_ESCAPE: '"' (STR_CHAR | ESC_SEQ)* ESC_ERR {
+	raise IllegalEscape(str(self.text[1:]))
+};
+
 ERROR_CHAR: . {
 	raise ErrorToken(self.text)
 };
