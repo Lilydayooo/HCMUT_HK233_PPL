@@ -1,1 +1,1 @@
-abc
+/* A C-style comment */
