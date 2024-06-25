@@ -1,1 +1,1 @@
-'MT22Parser' object has no attribute 'check'
+successful

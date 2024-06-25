@@ -1,1 +1,1 @@
-'MT22Parser' object has no attribute 'check'
+Error on line 12 col 46: right
