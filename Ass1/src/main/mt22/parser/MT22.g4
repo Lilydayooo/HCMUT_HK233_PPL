@@ -68,7 +68,11 @@ fragment DIGIT: [0-9];
 
 	/*______________DECLARATIONS______________*/
 
-var_decl: ID COMMA var_decl COMMA expr SEMI_COLON | ID COLON (atomic_type | array_type | auto_type) ASSIGN expr;
+var_decl: ID COMMA var_decl COMMA expr SEMI_COLON | ID COLON (atomic_type | array_type | auto_type) (ASSIGN expr)? 
+{
+self.check(True)
+}
+SEMI_COLON;
 
 func_decl: ID COLON FUNCTION (atomic_type | void_type | auto_type | array_type) LEFT_PAREN params_list RIGHT_PAREN (INHERIT ID)? body;
 
@@ -157,7 +161,7 @@ void_type: VOID;
 auto_type: AUTO;
 
 array_type: ARRAY LEFT_BRACK dimensions RIGHT_BRACK OF atomic_type;
-dimensions: INT_LIT (COMMA INT_LIT)?;
+dimensions: INT_LIT (COMMA INT_LIT)*;
 
 atomic_type: bool_type | int_type | float_type | string_type;
 
@@ -197,7 +201,8 @@ WS : [ \b\f\t\r\n]+ -> skip ; // skip spaces, tabs, newlines
 
 UNCLOSE_STRING: 
 '"' (STR_CHAR | ESC_SEQ)* EOF {
-cont = str(self.text) raise UncloseString(cont[1:])
+cont = str(self.text) 
+raise UncloseString(cont[1:])
 };
 
 ILLEGAL_ESCAPE: 

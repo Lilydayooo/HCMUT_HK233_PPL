@@ -1,1 +1,1 @@
-s,=,Unclosed String: abc,
+s,=,Error Token "
