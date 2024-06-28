@@ -34,13 +34,18 @@ class MT22Visitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MT22Parser#ids_list.
-    def visitIds_list(self, ctx:MT22Parser.Ids_listContext):
+    # Visit a parse tree produced by MT22Parser#varDecl.
+    def visitVarDecl(self, ctx:MT22Parser.VarDeclContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MT22Parser#exprs_var_list.
-    def visitExprs_var_list(self, ctx:MT22Parser.Exprs_var_listContext):
+    # Visit a parse tree produced by MT22Parser#varAssign.
+    def visitVarAssign(self, ctx:MT22Parser.VarAssignContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MT22Parser#varNonAssign.
+    def visitVarNonAssign(self, ctx:MT22Parser.VarNonAssignContext):
         return self.visitChildren(ctx)
 
 

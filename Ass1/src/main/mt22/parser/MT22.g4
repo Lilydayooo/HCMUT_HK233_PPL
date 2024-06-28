@@ -5,48 +5,6 @@ grammar MT22;
 from lexererr import *
 }
 
-@parser::members {
-@property
-def ids_size(self):
-    try:
-        return self._ids_size
-    except AttributeError: 
-        self._ids_size = -1
-        return self._ids_size
-
-@property
-def exprs_size(self):
-    try:
-        return self._exprs_size
-    except AttributeError:
-        self._exprs_size = -1
-        return self._exprs_size
-
-@ids_size.setter
-def ids_size(self, value):
-    self._ids_size = value
-
-@exprs_size.setter
-def exprs_size(self, value):
-    self._exprs_size = value
-
-
-def check(self, flag):
-    if flag: 
-        if self.exprs_size != -1 and self.exprs_size != self.ids_size: 
-            raise NoViableAltException(self)
-        else:
-            self.ids_size = -1
-            self.exprs_size = -1
-    else:
-        if self.exprs_size + 2 >= self.ids_size:
-            raise NoViableAltException(self)
-        else:
-            self.exprs_size += 1
-    
-}
-
-
 options{
 	language=Python3;
 }
@@ -110,17 +68,10 @@ fragment DIGIT: [0-9];
 
 	/*______________DECLARATIONS______________*/
 
-var_decl: ids_list COLON (atomic_type | array_type | auto_type) (ASSIGN exprs_var_list)?
-{
-self.check(True)
-}
-SEMI_COLON;
-ids_list: ID {self.ids_size +=2} (COMMA ID {self.ids_size+=1})*;
-exprs_var_list: expr
-{
-self.check(False)
-}
-COMMA exprs_var_list | expr {self.exprs_size+=2};
+var_decl: varDecl SEMI_COLON;
+varDecl: varAssign | varNonAssign;
+varAssign: (ID COMMA varAssign COMMA expr) | (ID COLON (auto_type | atomic_type | array_type) ASSIGN expr);
+varNonAssign: (ID COMMA varNonAssign) | (ID COLON (auto_type | atomic_type | array_type)); 
 
 func_decl: ID COLON FUNCTION (atomic_type | void_type | auto_type | array_type) LEFT_PAREN params_list? RIGHT_PAREN (INHERIT ID)? body;
 
