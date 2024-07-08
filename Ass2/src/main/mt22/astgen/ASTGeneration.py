@@ -232,4 +232,3 @@ class ASTGeneration(MT22Visitor):
     #atomic_type: bool_type | int_type | float_type | string_type;
     def visitAtomic_type(self, ctx: MT22Parser.Atomic_typeContext):
         return self.visit(ctx.getChild(0))
-    
