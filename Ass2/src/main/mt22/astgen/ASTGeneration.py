@@ -21,33 +21,32 @@ class ASTGeneration(MT22Visitor):
     def visitDecl(self, ctx: MT22Parser.DeclContext):
         return self.visit(ctx.getChild(0))
     
-    #var_decl: varDecl SEMI_COLON;
+    #var_decl: idlist COLON (atomic_type | array_type | auto_type) (ASSIGN exprs_list_var_decl)? {self.check(True)} SEMI_COLON;
     def visitVar_decl(self, ctx: MT22Parser.Var_declContext):
-        return self.visit(ctx.varDecl())
+        if ctx.exprs_list_var_decl():
+            return [VarDecl(id, self.visit(ctx.getChild(2)), expr) for id, expr in zip(self.visit(ctx.idlist()), self.visit(ctx.exprs_list_var_decl()))]
+        else:
+            return [VarDecl(id, self.visit(ctx.getChild(2)), None) for id in self.visit(ctx.idlist())]
     
-    #varDecl: varAssign | varNonAssign;
-    def visitVarDecl(self, ctx: MT22Parser.VarDeclContext):
-        return self.visit(ctx.getChild(0))
+    #idlist: ID (COMMA ID)*;
+    def visitIdlist(self, ctx: MT22Parser.IdlistContext):
+        return [x.getText() for x in ctx.ID()]
     
-    #varAssign: (ID COMMA varAssign COMMA expr) | (ID COLON (auto_type | atomic_type | array_type) ASSIGN expr);
-    def visitVarAssign(self, ctx: MT22Parser.VarAssignContext):
-        return None
+    #exprs_list_var_decl: expr COMMA exprs_list_var_decl | expr;
+    def visitExprs_list_var_decl(self, ctx: MT22Parser.Exprs_list_var_declContext):
+        return [self.visit(ctx.expr()) + self.visit(ctx.exprs_list_var_decl())] if ctx.getChildCount() == 3 else [self.visit(ctx.expr())]
 
-    #varNonAssign: (ID COMMA varNonAssign) | (ID COLON (auto_type | atomic_type | array_type));
-    def visitVarNonAssign(self, ctx: MT22Parser.VarNonAssignContext):
-        return None
-    
     #func_decl: ID COLON FUNCTION (atomic_type | void_type | auto_type | array_type) LEFT_PAREN params_list? RIGHT_PAREN (INHERIT ID)? body;
     def visitFunc_decl(self, ctx: MT22Parser.Func_declContext):
-        return None
+        return [FuncDecl(ctx.ID(0).getText(), self.visit(ctx.getChild(3)), self.visit(ctx.params_list()) if ctx.params_list() else [], ctx.ID(1).getText() if ctx.INHERIT() else None, self.visit(ctx.body()))]
     
     #params_list: param COMMA params_list | param;
     def visitParam_list(self, ctx: MT22Parser.Param_listContext):
-        return None
+        return [self.visit(ctx.param()) + self.visit(ctx.params_list())] if ctx.getChildCount() == 3 else [self.visit(ctx.param())]
     
     #param: INHERIT? OUT? ID COLON (atomic_type | array_type | auto_type);
     def visitParam(self, ctx: MT22Parser.ParamContext):
-        return None
+        return [ParamDecl(ctx.ID().getText(), self.visit(ctx.getChild(ctx.getChildCount() - 1)), True if ctx.OUT() else False, True if ctx.INHERIT() else False)]
     
     #body: block_stmt;
     def visitBody(self, ctx: MT22Parser.BodyContext):
@@ -61,59 +60,78 @@ class ASTGeneration(MT22Visitor):
     
     #string_expr: relat_expr SCOPE relat_expr | relat_expr;
     def visitString_expr(self, ctx: MT22Parser.String_exprContext):
-        return None
+        return BinExpr(ctx.getChild(1).getText(), self.visit(ctx.relat_expr(0)), self.visit(ctx.relat_expr(1))) if ctx.getChildCount() == 3 else self.visit(ctx.relat_expr(0))
     
     #relat_expr: expr1 (SAME | NOTSAME | MOR | MOR_EQ | LESS | LESS_EQ) expr1 | expr1;
     def visitRelat_expr(self, ctx: MT22Parser.Relat_exprContext):
-        return None
+        return BinExpr(ctx.getChild(1).getText(), self.visit(ctx.expr1(0)), self.visit(ctx.expr1(1))) if ctx.getChildCount() == 3 else self.visit(ctx.expr1(0))
     
     #expr1: expr1 (AND | OR) expr2 | expr2;
     def visitExpr1(self, ctx: MT22Parser.Expr1Context):
-        return None
+        return BinExpr(ctx.getChild(1).getText(), self.visit(ctx.expr1()), self.visit(ctx.expr2())) if ctx.getChildCount() == 3 else self.visit(ctx.expr2())
     
     #expr2: expr2 (ADD | SUB) expr3 | expr3;
     def visitExpr2(self, ctx: MT22Parser.Expr2Context):
-        return None
+        return BinExpr(ctx.getChild(1).getText(), self.visit(ctx.expr2()), self.visit(ctx.expr3())) if ctx.getChildCount() == 3 else self.visit(ctx.expr3())
     
     #expr3: expr3 (MUL | DIV | MOD) expr4 | expr4;
     def visitExpr3(self, ctx: MT22Parser.Expr3Context):
-        return None
+        return BinExpr(ctx.getChild(1).getText(), self.visit(ctx.expr3()), self.visit(ctx.expr4())) if ctx.getChildCount() == 3 else self.visit(ctx.expr4())
     
     #expr4: NOT expr4 | expr5;
     def visitExpr4(self, ctx: MT22Parser.Expr4Context):
-        return None
+        return UnExpr(ctx.NOT().getText(), self.visit(ctx.expr4())) if ctx.getChildCount() == 2 else self.visit(ctx.expr5())
     
     #expr5: SUB expr5 | expr6;
     def visitExpr5(self, ctx: MT22Parser.Expr5Context):
-        return None
+        return UnExpr(ctx.SUB().getText(), self.visit(ctx.expr5())) if ctx.getChildCount() == 2 else self.visit(ctx.expr6())
     
     #expr6: ID indexes | expr7;
     def visitExpr6(self, ctx: MT22Parser.Expr6Context):
-        return None
+        return ArrayCell(ctx.ID().getText(), self.visit(ctx.indexes())) if ctx.getChildCount() == 2 else self.visit(ctx.expr7())
     
     #indexes: LEFT_BRACK exprs_list RIGHT_BRACK;
     def visitIndexes(self, ctx: MT22Parser.IndexesContext):
-        return None
+        return self.visit(ctx.exprs_list())
     
     #expr7: operand | LEFT_PAREN expr RIGHT_PAREN;
     def visitExpr7(self, ctx: MT22Parser.Expr7Context):
-        return None
+        return self.visit(ctx.expr()) if ctx.getChildCount() == 3 else self.visit(ctx.operand())
     
     #operand: literal | func_call | ID;
     def visitOperand(self, ctx: MT22Parser.OperandContext):
-        return None
+        if ctx.ID():
+            return Id(ctx.ID().getText())
+        elif ctx.func_call():
+            return self.visit(ctx.func_call(0))
+        else:
+            return self.visit(ctx.literal())
     
     #func_call: ID LEFT_PAREN exprs_list? RIGHT_PAREN;
     def visitFunc_call(self, ctx: MT22Parser.Func_callContext):
-        return None
+        id = ctx.ID().getText()
+        exprlist = self.visit(ctx.exprs_list()) if ctx.exprs_list() else []
+        return [FuncCall(id, exprlist), id, exprlist]
     
     #literal: INT_LIT | FLOAT_LIT | BOOL_LIT | STRING_LIT | array_lit;
     def visitLiteral(self, ctx: MT22Parser.LiteralContext):
-        return None
+        if ctx.INT_LIT():
+            return IntegerLit(int(ctx.INT_LIT().getText()))
+        elif ctx.FLOAT_LIT():
+            flt = ctx.FLOAT_LIT().getText()
+            return FloatLit(float("0" + flt) if flt[0] == "." else float(flt))
+        elif ctx.BOOL_LIT():
+            return BooleanLit(self.toBool(ctx.BOOL_LIT().getText()))
+        elif ctx.STRING_LIT():
+            return StringLit(str(ctx.STRING_LIT().getText()))
+        elif ctx.array_lit():
+            return self.visit(ctx.array_lit())
     
     #exprs_list: expr COMMA exprs_list | expr;
     def visitExprs_list(self, ctx: MT22Parser.Exprs_listContext):
-        return None
+        if ctx.exprs_list():
+            return (self.visit(ctx.expr()) + self.visit(ctx.exprs_list())) 
+        else: self.visit(ctx.expr())
     
         #_______________STATEMENTS_______________
 
