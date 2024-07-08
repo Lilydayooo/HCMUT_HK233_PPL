@@ -8,7 +8,7 @@ class LexerSuite(unittest.TestCase):
 
     def test_comment_1(self):
         self.assertTrue(TestLexer.test(
-            "/* A C-style comment */", "<EOF>", 101))
+            "/* A comment */", "<EOF>", 101))
 
     def test_comment_2(self):
         self.assertTrue(TestLexer.test(
@@ -16,24 +16,24 @@ class LexerSuite(unittest.TestCase):
 
     def test_comment_3(self):
         self.assertTrue(TestLexer.test(
-            """// A C-style comment
+            """// A comment
 """, "<EOF>", 103))
 
     def test_comment_4(self):
         self.assertTrue(TestLexer.test(
-            "// A C-style\n /* comment */", "<EOF>", 104))
+            "// A werird style\n /* comment */", "<EOF>", 104))
 
     def test_comment_5(self):
         self.assertTrue(TestLexer.test(
-            "// A C-style/* comment */", "<EOF>", 105))
+            "// A /* comment */", "<EOF>", 105))
 
     def test_comment_6(self):
         self.assertTrue(TestLexer.test(
-            "/* // A C-style comment */", "<EOF>", 106))
+            "/* // A ? comment */", "<EOF>", 106))
 
     def test_comment_7(self):
         self.assertTrue(TestLexer.test(
-            "/* /* A C-style */ */", "*,/,<EOF>", 107))
+            "/* /* double? */ */", "*,/,<EOF>", 107))
 
     """TEST IDENTIFIERS"""
 
@@ -41,17 +41,17 @@ class LexerSuite(unittest.TestCase):
         self.assertTrue(TestLexer.test("abc", "abc,<EOF>", 108))
 
     def test_id_2(self):
-        self.assertTrue(TestLexer.test("abc a12", "abc,a12,<EOF>", 109))
+        self.assertTrue(TestLexer.test("abc a2", "abc,a2,<EOF>", 109))
 
     def test_id_3(self):
-        self.assertTrue(TestLexer.test("abc A12", "abc,A12,<EOF>", 110))
+        self.assertTrue(TestLexer.test("abc A1", "abc,A1,<EOF>", 110))
 
     def test_id_4(self):
         self.assertTrue(TestLexer.test(
-            "abc?svn", "abc,Error Token ?", 111))
+            "abc?xyz", "abc,Error Token ?", 111))
 
     def test_id_5(self):
-        self.assertTrue(TestLexer.test("0a12", "0,a12,<EOF>", 112))
+        self.assertTrue(TestLexer.test("0b89", "0,b89,<EOF>", 112))
 
     def test_id_6(self):
         self.assertTrue(TestLexer.test("abc_123", "abc_123,<EOF>", 113))
@@ -60,18 +60,18 @@ class LexerSuite(unittest.TestCase):
         self.assertTrue(TestLexer.test("ABC_123", "ABC_123,<EOF>", 114))
 
     def test_id_8(self):
-        self.assertTrue(TestLexer.test("aBc_d123", "aBc_d123,<EOF>", 115))
+        self.assertTrue(TestLexer.test("xYz_d321", "xYz_d321,<EOF>", 115))
 
     def test_id_9(self):
-        self.assertTrue(TestLexer.test("abC_D123", "abC_D123,<EOF>", 116))
+        self.assertTrue(TestLexer.test("zyX_D312", "zyX_D312,<EOF>", 116))
 
     def test_id_10(self):
         self.assertTrue(TestLexer.test(
-            "_abcABC__", "_abcABC__,<EOF>", 117))
+            "_abcXYZ__", "_abcXYZ__,<EOF>", 117))
 
     """TEST LITERALS"""
 
-    def test_int_lit_1(self):
+    def test_int_1(self):
         self.assertTrue(
             TestLexer.test(
                 r"""0""",
@@ -80,52 +80,52 @@ class LexerSuite(unittest.TestCase):
             )
         )
 
-    def test_int_lit_2(self):
+    def test_int_2(self):
         self.assertTrue(
             TestLexer.test(
-                r"""123456789""",
-                "123456789,<EOF>",
+                r"""987654321""",
+                "987654321,<EOF>",
                 119,
             )
         )
 
-    def test_int_lit_3(self):
+    def test_int_3(self):
         self.assertTrue(
             TestLexer.test(
-                r"""-1230""",
-                "-,1230,<EOF>",
+                r"""-0""",
+                "-,0,<EOF>",
                 120,
             )
         )
 
-    def test_int_lit_4(self):
+    def test_int_4(self):
         self.assertTrue(
             TestLexer.test(
-                r"""1_12""",
-                "112,<EOF>",
+                r"""1_34""",
+                "134,<EOF>",
                 121,
             )
         )
 
-    def test_int_lit_5(self):
+    def test_int_5(self):
         self.assertTrue(
             TestLexer.test(
-                r"""123_456_789""",
-                "123456789,<EOF>",
+                r"""987_456_321""",
+                "987456321,<EOF>",
                 122,
             )
         )
 
-    def test_int_lit_6(self):
+    def test_int_6(self):
         self.assertTrue(
             TestLexer.test(
-                r"""341_""",
-                "341,_,<EOF>",
+                r"""34_""",
+                "34,_,<EOF>",
                 123,
             )
         )
 
-    def test_int_lit_7(self):
+    def test_int_7(self):
         self.assertTrue(
             TestLexer.test(
                 r"""1_23_34_""",
@@ -134,101 +134,101 @@ class LexerSuite(unittest.TestCase):
             )
         )
 
-    def test_float_lit_1(self):
+    def test_float_1(self):
         self.assertTrue(
             TestLexer.test(
-                r"""0.0""",
-                "0.0,<EOF>",
+                r"""0.5""",
+                "0.5,<EOF>",
                 125,
             )
         )
 
-    def test_float_lit_2(self):
+    def test_float_2(self):
         self.assertTrue(
             TestLexer.test(
-                r""".5555""",
-                ".,5555,<EOF>",
+                r""".55""",
+                ".,55,<EOF>",
                 126,
             )
         )
 
-    def test_float_lit_3(self):
+    def test_float_3(self):
         self.assertTrue(
             TestLexer.test(
-                r"""189.00000""",
-                "189.00000,<EOF>",
+                r"""19.00""",
+                "19.00,<EOF>",
                 127,
             )
         )
 
-    def test_float_lit_4(self):
+    def test_float_4(self):
         self.assertTrue(
             TestLexer.test(
-                r"""157.""",
-                "157.,<EOF>",
+                r"""14.""",
+                "14.,<EOF>",
                 128,
             )
         )
 
-    def test_float_lit_5(self):
+    def test_float_5(self):
         self.assertTrue(
             TestLexer.test(
-                r"""1_2_3_4.""",
-                "1234.,<EOF>",
+                r"""7_4_1_2_5.""",
+                "74125.,<EOF>",
                 129,
             )
         )
 
-    def test_float_lit_6(self):
+    def test_float_6(self):
         self.assertTrue(
             TestLexer.test(
-                r"""1_2_3_56.1234""",
-                "12356.1234,<EOF>",
+                r"""9_5_1_3.7531""",
+                "9513.7531,<EOF>",
                 130,
             )
         )
 
-    def test_float_lit_7(self):
+    def test_float_7(self):
         self.assertTrue(
             TestLexer.test(
-                r"""1_.34""",
-                "1,_,.,34,<EOF>",
+                r"""1_.23""",
+                "1,_,.,23,<EOF>",
                 131,
             )
         )
 
-    def test_float_lit_8(self):
+    def test_float_8(self):
         self.assertTrue(
             TestLexer.test(
-                r"""12e8""",
-                "12e8,<EOF>",
+                r"""10e6""",
+                "10e6,<EOF>",
                 132,
             )
         )
 
-    def test_float_lit_9(self):
+    def test_float_9(self):
         self.assertTrue(
             TestLexer.test(
-                r"""0.33E-3""",
-                "0.33E-3,<EOF>",
+                r"""0.1E-1""",
+                "0.1E-1,<EOF>",
                 133,
             )
         )
 
-    def test_float_lit_10(self):
+    def test_float_10(self):
         self.assertTrue(
             TestLexer.test(
-                r"""128e+42""",
-                "128e+42,<EOF>",
+                r"""1e+23""",
+                "1e+23,<EOF>",
                 134,
             )
         )
 
-    def test_float_lit_11(self):
+    def test_float_11(self):
         self.assertTrue(
             TestLexer.test(
-                r"""1_2_8e-42""",
-                "128e-42,<EOF>",
+                r"""9_7_5e-31""",
+                "975e-31,<EOF>",
                 135,
             )
         )
@@ -237,59 +237,59 @@ class LexerSuite(unittest.TestCase):
         self.assertTrue(TestLexer.test(
             r"""true false""", "true,false,<EOF>", 136,))
 
-    def test_string_lit_1(self):
+    def test_string_1(self):
         self.assertTrue(TestLexer.test(
-            """\"This is \\t a string containing tab \t\"""", "This is \\t a string containing tab 	,<EOF>", 137,))
+            """\"This \\t contains tab \t\"""", "This \\t contains tab 	,<EOF>", 137,))
 
-    def test_string_lit_2(self):
+    def test_string_2(self):
         self.assertTrue(TestLexer.test(
             """\"He asked me: \\\"Where is John?\\\"\"""", "He asked me: \\\"Where is John?\\\",<EOF>", 138,))
 
-    def test_string_lit_3(self):
-        self.assertTrue(TestLexer.test("\"He asked me: \'\"Where is John?\'\"\"",
-                                       "He asked me: \'\"Where is John?\'\",<EOF>", 139))
+    def test_string_3(self):
+        self.assertTrue(TestLexer.test("\"He asked: \'\"Where is John Cena?\'\"\"",
+                                       "He asked: \'\"Where is John Cena?\'\",<EOF>", 139))
 
-    def test_string_lit_4(self):
+    def test_string_4(self):
         self.assertTrue(TestLexer.test(
-            "\"\\b \\' He is my ex's man\"", "\\b \\' He is my ex's man,<EOF>", 140))
+            "\"\\b \\' He is my bro's bro\"", "\\b \\' He is my bro's bro,<EOF>", 140))
 
-    def test_string_lit_5(self):
+    def test_string_5(self):
         self.assertTrue(TestLexer.test(
-            "\"She is Tam\'s girlfriend.\"", "She is Tam\'s girlfriend.,<EOF>", 141))
+            "\"She is Shin\'s gf.\"", "She is Shin\'s gf.,<EOF>", 141))
 
     """TEST ERROR"""
 
-    def test_string_unclose_1(self):
-        self.assertTrue(TestLexer.test("\"He is a man",
-                        "Unclosed String: He is a man", 142))
+    def test_unclose_1(self):
+        self.assertTrue(TestLexer.test("\"He is not a man",
+                        "Unclosed String: He is not a man", 142))
 
-    def test_string_unclose_2(self):
-        self.assertTrue(TestLexer.test("\"abc \\n \\f 's def",
-                        "Unclosed String: abc \\n \\f 's def", 143))
+    def test_unclose_2(self):
+        self.assertTrue(TestLexer.test("\"abc \\n \\f 's xyz",
+                        "Unclosed String: abc \\n \\f 's xyz", 143))
 
-    def test_string_unclose_3(self):
-        self.assertTrue(TestLexer.test("\"He is \\b a man",
-                        "Unclosed String: He is \\b a man", 144))
+    def test_unclose_3(self):
+        self.assertTrue(TestLexer.test("\"He is NOT \\b a man",
+                        "Unclosed String: He is NOT \\b a man", 144))
 
-    def test_string_unclose_4(self):
-        self.assertTrue(TestLexer.test("\"It is a unclosed \\n string",
-                        "Unclosed String: It is a unclosed \\n string", 145))
+    def test_unclose_4(self):
+        self.assertTrue(TestLexer.test("\"Unclosed \\n string",
+                        "Unclosed String: Unclosed \\n string", 145))
 
-    def test_string_unclose_5(self):
-        self.assertTrue(TestLexer.test("\"This is a \\t string \\n containing tab \" \"He asked \\n me: '\"Where '\"is'\" John?'\"\" \"I am not closed",
-                        "This is a \\t string \\n containing tab ,He asked \\n me: '\"Where '\"is'\" John?'\",Unclosed String: I am not closed", 146))
+    def test_unclose_5(self):
+        self.assertTrue(TestLexer.test("\"This \\t string \\n contains tab \" \"He asked \\n : '\"Where '\"is'\" John Cena?'\"\" \"Unclosed",
+                        "This \\t string \\n contains tab ,He asked \\n : '\"Where '\"is'\" John Cena?'\",Unclosed String: Unclosed", 146))
 
-    def test_string_illegal_esc_1(self):
-        self.assertTrue(TestLexer.test("\"I have an escape sequence \'\"Here it is \\k\'\"\"",
-                        "Illegal Escape In String: I have an escape sequence \'\"Here it is \\k", 147))
+    def test_illegal_esc_1(self):
+        self.assertTrue(TestLexer.test("\"There is an escape sequence \'\" -> \\k\'\"\"",
+                        "Illegal Escape In String: There is an escape sequence \'\" -> \\k", 147))
 
-    def test_string_illegal_esc_2(self):
-        self.assertTrue(TestLexer.test("\"\\a He is a man\"",
+    def test_illegal_esc_2(self):
+        self.assertTrue(TestLexer.test("\"\\a He is a winner\"",
                         "Illegal Escape In String: \\a", 148))
 
-    def test_string_illegal_esc_3(self):
-        self.assertTrue(TestLexer.test("\"\\\\ He is a \\\\ \\\' 19-year-old man \\a\"",
-                        "Illegal Escape In String: \\\\ He is a \\\\ \\\' 19-year-old man \\a", 149))
+    def test_illegal_esc_3(self):
+        self.assertTrue(TestLexer.test("\"\\\\ He is an \\\\ \\\' old man \\a\"",
+                        "Illegal Escape In String: \\\\ He is an \\\\ \\\' old man \\a", 149))
 
     """TEST OPERATORS"""
 
@@ -313,21 +313,21 @@ class LexerSuite(unittest.TestCase):
         self.assertTrue(TestLexer.test("&&&", "&&,Error Token &", 155))
 
     def test_operators_7(self):
-        self.assertTrue(TestLexer.test("-12_3", "-,123,<EOF>", 156))
+        self.assertTrue(TestLexer.test("-34_3", "-,343,<EOF>", 156))
 
     """TEST KEYWORDS"""
 
     def test_keywords_1(self):
-        self.assertTrue(TestLexer.test("auto break boolean do else",
-                        "auto,break,boolean,do,else,<EOF>", 157))
+        self.assertTrue(TestLexer.test("do else auto break boolean",
+                        "do,else,auto,break,boolean,<EOF>", 157))
 
     def test_keywords_2(self):
         self.assertTrue(TestLexer.test(
-            "false float for function if", "false,float,for,function,if,<EOF>", 158))
+            "for function if false float", "for,function,if,false,float,<EOF>", 158))
 
     def test_keywords_3(self):
         self.assertTrue(TestLexer.test(
-            "integer return string true void", "integer,return,string,true,void,<EOF>", 159))
+            "integer return void string true", "integer,true,void,return,string,<EOF>", 159))
 
     def test_keywords_4(self):
         self.assertTrue(TestLexer.test(
