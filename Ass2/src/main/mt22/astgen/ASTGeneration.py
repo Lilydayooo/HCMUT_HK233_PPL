@@ -148,30 +148,30 @@ class ASTGeneration(MT22Visitor):
     
     #assign_stmt: assign_left ASSIGN assign_right SEMI_COLON;
     def visitAssign_stmt(self, ctx: MT22Parser.Assign_stmtContext):
-        return None
+        return AssignStmt(self.visit(ctx.assign_left()), self.visit(ctx.assign_right()))
     
     #assign_left: scalar_var | ID indexes;
     def visitAssign_left(self, ctx: MT22Parser.Assign_leftContext):
-        return None
+        return ArrayCell(ctx.ID().getText(), self.visit(ctx.indexes())) if ctx.getChildCount() == 2 else self.visit(ctx.scalar_var())
     
     #assign_right: expr;
     def visitAssign_right(self, ctx: MT22Parser.Assign_rightContext):
-        return None
+        return self.visit(ctx.expr())
     
     #if_stmt: IF LEFT_PAREN expr RIGHT_PAREN stmt (ELSE stmt)?;
     def visitIf_stmt(self, ctx: MT22Parser.If_stmtContext):
-        if ctx.getChildCount() == 2:
+        if ctx.getChildCount() == 5:
             return IfStmt(self.visit(ctx.expr()), self.visit(ctx.getChild(1)), None)
         else:
             return IfStmt(self.visit(ctx.expr()), self.visit(ctx.getChild(1)), self.visit(ctx.getChild(2)))
     
     #for_stmt: FOR LEFT_PAREN initial_expr COMMA condition_expr COMMA upd8_expr RIGHT_PAREN stmt;
     def visitFor_stmt(self, ctx: MT22Parser.For_stmtContext):
-        return None
+        return ForStmt(self.visit(ctx.initial_expr()), self.visit(ctx.condition_expr()), self.visit(ctx.upd8_expr()), self.visit(ctx.stmt()))
     
     #initial_expr: scalar_var ASSIGN expr;
     def visitInitial_expr(self, ctx: MT22Parser.Initial_exprContext):
-        return None
+        return AssignStmt(self.visit(ctx.scalar_var()), self.visit(ctx.expr()))
     
     #condition_expr: expr;
     def visitCondition_expr(self, ctx: MT22Parser.Condition_exprContext):
@@ -183,19 +183,19 @@ class ASTGeneration(MT22Visitor):
     
     #while_stmt: WHILE LEFT_PAREN expr RIGHT_PAREN stmt;
     def visitWhile_stmt(self, ctx: MT22Parser.While_stmtContext):
-        return None
+        return WhileStmt(self.visit(ctx.expr()), self.visit(ctx.stmt()))
     
     #do_while_stmt: DO block_stmt WHILE LEFT_PAREN expr RIGHT_PAREN SEMI_COLON;
     def visitDo_while_stmt(self, ctx: MT22Parser.Do_while_stmtContext):
-        return None
+        return DoWhileStmt(self.visit(ctx.expr()), self.visit(ctx.block_stmt()))
     
     #break_stmt: BREAK SEMI_COLON;
     def visitBreak_stmt(self, ctx: MT22Parser.Break_stmtContext):
-        return None
+        return BreakStmt()
     
     #continue_stmt: CONTINUE SEMI_COLON;
     def visitContinue_stmt(self, ctx: MT22Parser.Continue_stmtContext):
-        return None
+        return ContinueStmt()
     
     #return_stmt: RETURN expr? SEMI_COLON;
     def visitReturn_stmt(self, ctx: MT22Parser.Return_stmtContext):
@@ -203,11 +203,12 @@ class ASTGeneration(MT22Visitor):
     
     #call_stmt: func_call SEMI_COLON;
     def visitCall_stmt(self, ctx: MT22Parser.Call_stmtContext):
-        return None
+        call = self.visit(ctx.func_call())
+        return CallStmt(call[1], call[2])
     
     #block_stmt: LEFT_BRACE stmt_list? RIGHT_BRACE;
     def visitBlock_stmt(self, ctx: MT22Parser.Block_stmtContext):
-        return self.visit(ctx.stmt_list()) if ctx.stmt_list() else []
+        return BlockStmt(self.visit(ctx.stmt_list()) if ctx.stmt_list() else [])
     
     #scalar_var: ID;
     def visitScalar_var(self, ctx: MT22Parser.Scalar_varContext):
