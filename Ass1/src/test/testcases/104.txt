@@ -1,2 +1,2 @@
-// A C-style
+// A werird style
  /* comment */

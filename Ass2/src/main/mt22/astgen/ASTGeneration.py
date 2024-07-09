@@ -41,7 +41,7 @@ class ASTGeneration(MT22Visitor):
         return [FuncDecl(ctx.ID(0).getText(), self.visit(ctx.getChild(3)), self.visit(ctx.params_list()) if ctx.params_list() else [], ctx.ID(1).getText() if ctx.INHERIT() else None, self.visit(ctx.body()))]
     
     #params_list: param COMMA params_list | param;
-    def visitParam_list(self, ctx: MT22Parser.Param_listContext):
+    def visitParams_list(self, ctx: MT22Parser.Params_listContext):
         return [self.visit(ctx.param()) + self.visit(ctx.params_list())] if ctx.getChildCount() == 3 else [self.visit(ctx.param())]
     
     #param: INHERIT? OUT? ID COLON (atomic_type | array_type | auto_type);
@@ -178,7 +178,7 @@ class ASTGeneration(MT22Visitor):
         return self.visit(ctx.expr())
     
     #upd8_expr: expr;
-    def visitUpd8(self, ctx: MT22Parser.Upd8Context):
+    def visitUpd8_expr(self, ctx: MT22Parser.Upd8_exprContext):
         return self.visit(ctx.expr())
     
     #while_stmt: WHILE LEFT_PAREN expr RIGHT_PAREN stmt;

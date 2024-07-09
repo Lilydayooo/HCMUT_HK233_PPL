@@ -1,1 +1,2 @@
- "He asked me: \"Where is John?\"" 
+// A werird style
+ /* comment */

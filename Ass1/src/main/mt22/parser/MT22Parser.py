@@ -381,46 +381,6 @@ class MT22Parser ( Parser ):
 
 
 
-    @property
-    def ids_size(self):
-        try:
-            return self._ids_size
-        except AttributeError: 
-            self._ids_size = -1
-            return self._ids_size
-
-    @property
-    def exprs_size(self):
-        try:
-            return self._exprs_size
-        except AttributeError:
-            self._exprs_size = -1
-            return self._exprs_size
-
-    @ids_size.setter
-    def ids_size(self, value):
-        self._ids_size = value
-
-    @exprs_size.setter
-    def exprs_size(self, value):
-        self._exprs_size = value
-
-
-    def check(self, flag):
-        if flag: 
-            if self.exprs_size != -1 and self.exprs_size != self.ids_size: 
-                raise NoViableAltException(self)
-            else:
-                self.ids_size = -1
-                self.exprs_size = -1
-        else:
-            if self.exprs_size + 2 >= self.ids_size:
-                raise NoViableAltException(self)
-            else:
-                self.exprs_size += 1
-        
-
-
 
     class ProgramContext(ParserRuleContext):
         __slots__ = 'parser'
