@@ -12,7 +12,7 @@ class ASTGeneration(MT22Visitor):
     
     #decls: decl decls | decl;
     def visitDecls(self, ctx: MT22Parser.DeclsContext):
-        return [*ctx.decl().accept(self), *ctx.decls().accept(self)] if ctx.getChildCount() == 2 else ctx.decl().accept(self)
+        return [*self.visit(ctx.decl()), *self.visit(ctx.decls())] if ctx.getChildCount() == 2 else self.visit(ctx.decl())
     
     #decl: var_decl | func_decl;
     def visitDecl(self, ctx: MT22Parser.DeclContext):
@@ -21,12 +21,12 @@ class ASTGeneration(MT22Visitor):
     #var_decl: idlist COLON (atomic_type | array_type | auto_type) (ASSIGN exprs_list_var_decl)? {self.check(True)} SEMI_COLON;
     def visitVar_decl(self, ctx: MT22Parser.Var_declContext):
         if not ctx.exprs_list_var_decl():
-            return [VarDecl(id, ctx.getChild(2).accept(self), None) for id in ctx.idlist().accept(self)]
-        return [VarDecl(id, ctx.getChild(2).accept(self), expr) for id, expr in zip(ctx.idlist().accept(self), ctx.exprs_list_var_decl().accept(self))]
+            return [VarDecl(id, self.visit(ctx.getChild(2)), None) for id in self.visit(ctx.idlist())]
+        return [VarDecl(id, self.visit(ctx.getChild(2)), expr) for id, expr in zip(self.visit(ctx.idlist()), self.visit(ctx.exprs_list_var_decl()))]
     
     #array_lit: LEFT_BRACE exprs_list? RIGHT_BRACE;
     def visitArray_lit(self, ctx: MT22Parser.Array_litContext):
-        return ArrayLit(ctx.exprs_list().accept(self) if ctx.exprs_list() else [])
+        return ArrayLit(self.visit(ctx.exprs_list()) if ctx.exprs_list() else [])
 
     #idlist: ID (COMMA ID)*;
     def visitIdlist(self, ctx: MT22Parser.IdlistContext):
@@ -42,7 +42,7 @@ class ASTGeneration(MT22Visitor):
     
     #params_list: param COMMA params_list | param;
     def visitParams_list(self, ctx: MT22Parser.Params_listContext):
-        return [*ctx.param().accept(self), *ctx.params_list().accept(self)] if ctx.getChildCount() == 3 else ctx.param().accept(self)
+        return [*self.visit(ctx.param()), *self.visit(ctx.params_list())] if ctx.getChildCount() == 3 else self.visit(ctx.param())
     
     #param: INHERIT? OUT? ID COLON (atomic_type | array_type | auto_type);
     def visitParam(self, ctx: MT22Parser.ParamContext):
@@ -103,7 +103,7 @@ class ASTGeneration(MT22Visitor):
         if ctx.ID():
             return Id(ctx.ID().getText())
         elif ctx.func_call():
-            return ctx.func_call().accept(self)[0]
+            return self.visit(ctx.func_call())[0]
         else:
             return self.visit(ctx.literal())
     
@@ -132,16 +132,16 @@ class ASTGeneration(MT22Visitor):
     
     #exprs_list: expr COMMA exprs_list | expr;
     def visitExprs_list(self, ctx: MT22Parser.Exprs_listContext):
-        return [ctx.expr().accept(self), *ctx.exprs_list().accept(self)] if ctx.getChildCount() == 3 else [ctx.expr().accept(self)]
+        return [self.visit(ctx.expr()), *self.visit(ctx.exprs_list())] if ctx.getChildCount() == 3 else [self.visit(ctx.expr())]
     
         #_______________STATEMENTS_______________
 
     #stmt_list: (stmt | var_decl) stmt_list | (stmt | var_decl);
     def visitStmt_list(self, ctx: MT22Parser.Stmt_listContext):
         if ctx.var_decl():
-            return [*ctx.var_decl().accept(self), *ctx.stmt_list().accept(self)] if ctx.getChildCount() == 2 else ctx.var_decl().accept(self)
+            return [*self.visit(ctx.var_decl()), *self.visit(ctx.stmt_list())] if ctx.getChildCount() == 2 else self.visit(ctx.var_decl())
         
-        return [ctx.stmt().accept(self), *ctx.stmt_list().accept(self)] if ctx.getChildCount() == 2 else [ctx.stmt().accept(self)]
+        return [self.visit(ctx.stmt()), *self.visit(ctx.stmt_list())] if ctx.getChildCount() == 2 else [self.visit(ctx.stmt())]
     
     #stmt: assign_stmt | if_stmt | for_stmt | while_stmt | do_while_stmt | break_stmt | continue_stmt | return_stmt | call_stmt | block_stmt;
     def visitStmt(self, ctx: MT22Parser.StmtContext):
@@ -161,7 +161,7 @@ class ASTGeneration(MT22Visitor):
     
     #if_stmt: IF LEFT_PAREN expr RIGHT_PAREN stmt (ELSE stmt)?;
     def visitIf_stmt(self, ctx: MT22Parser.If_stmtContext):
-        return IfStmt(ctx.expr().accept(self), ctx.stmt(0).accept(self), ctx.stmt(1).accept(self) if ctx.stmt(1) else ctx.stmt(1))
+        return IfStmt(self.visit(ctx.expr()), self.visit(ctx.stmt(0)), self.visit(ctx.stmt(1)) if ctx.stmt(1) else ctx.stmt(1))
     
     #for_stmt: FOR LEFT_PAREN initial_expr COMMA condition_expr COMMA upd8_expr RIGHT_PAREN stmt;
     def visitFor_stmt(self, ctx: MT22Parser.For_stmtContext):
@@ -201,12 +201,12 @@ class ASTGeneration(MT22Visitor):
     
     #call_stmt: func_call SEMI_COLON;
     def visitCall_stmt(self, ctx: MT22Parser.Call_stmtContext):
-        call = ctx.func_call().accept(self)
+        call = self.visit(ctx.func_call())
         return CallStmt(call[1], call[2])
     
     #block_stmt: LEFT_BRACE stmt_list? RIGHT_BRACE;
     def visitBlock_stmt(self, ctx: MT22Parser.Block_stmtContext):
-        return BlockStmt(ctx.stmt_list().accept(self) if ctx.stmt_list() else [])
+        return BlockStmt(self.visit(ctx.stmt_list()) if ctx.stmt_list() else [])
     
     #scalar_var: ID;
     def visitScalar_var(self, ctx: MT22Parser.Scalar_varContext):

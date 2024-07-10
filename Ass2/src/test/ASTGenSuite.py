@@ -58,7 +58,7 @@ a, b, c : auto = 1, true, "Hello World!";
 	VarDecl(b, AutoType, BooleanLit(True))
 	VarDecl(c, AutoType, StringLit(Hello World!))
 ])"""
-        self.assertTrue(TestAST.test(input, expect, D))
+        self.assertTrue(TestAST.test(input, expect, 305))
 
     def test_vardecls_6(self):
         input = r"""
@@ -73,7 +73,7 @@ a,   b,   c   : array [2, 3] of integer;
 
     def test_vardecls_7(self):
         input = r"""
-a1,   b2,   c3   : array [2] of string;D
+a1,   b2,   c3   : array [2] of string;
 a,   b,   c   : array [6, 3, 10] of float;
 """
         expect = r"""Program([
