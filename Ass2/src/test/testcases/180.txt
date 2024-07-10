@@ -1,4 +1,0 @@
-
-float a, b, c;
-boolean x, y, z;
-integer g, h, y;

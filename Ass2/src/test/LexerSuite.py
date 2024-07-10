@@ -327,7 +327,7 @@ class LexerSuite(unittest.TestCase):
 
     def test_keywords_3(self):
         self.assertTrue(TestLexer.test(
-            "integer return void string true", "integer,true,void,return,string,<EOF>", 159))
+            "integer return string true void", "integer,return,string,true,void,<EOF>", 159))
 
     def test_keywords_4(self):
         self.assertTrue(TestLexer.test(

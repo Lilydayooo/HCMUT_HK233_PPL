@@ -1,1 +1,0 @@
-mod,:,function,integer,(,num,:,array,[,5,],of,integer,,,a,:,integer,),{,res,,,i,:,integer,=,0,,,-,1,;,for,(,i,=,0,;,i,<,5,;,i,+,1,),res,=,(,res,*,10,+,num,[,i,],-,0,),%,a,;,return,res,;,},<EOF>

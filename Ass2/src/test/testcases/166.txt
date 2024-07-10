@@ -1,4 +1,0 @@
-
-"Newline
-	multiple lines
-"

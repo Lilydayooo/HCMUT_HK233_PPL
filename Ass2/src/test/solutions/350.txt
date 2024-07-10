@@ -1,0 +1,3 @@
+Program([
+	FuncDecl(buyCar, IntegerType, [Param(nums, ArrayType([200], IntegerType)), Param(length, IntegerType), Param(k, IntegerType)], None, BlockStmt([CallStmt(sort, Id(nums), BinExpr(+, Id(nums), Id(length))), VarDecl(result, IntegerType, IntegerLit(0)), VarDecl(i, IntegerType, IntegerLit(0)), WhileStmt(BinExpr(&&, BinExpr(>, Id(k), IntegerLit(0)), BinExpr(>=, BinExpr(-, Id(k), ArrayCell(nums, [Id(i)])), IntegerLit(0))), BlockStmt([AssignStmt(Id(result), BinExpr(+, Id(result), IntegerLit(1))), AssignStmt(Id(k), BinExpr(-, Id(k), ArrayCell(nums, [Id(i)]))), AssignStmt(Id(i), BinExpr(+, Id(i), IntegerLit(1)))])), ReturnStmt(Id(result))]))
+])

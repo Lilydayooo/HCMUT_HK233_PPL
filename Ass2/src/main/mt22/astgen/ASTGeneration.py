@@ -103,7 +103,7 @@ class ASTGeneration(MT22Visitor):
         if ctx.ID():
             return Id(ctx.ID().getText())
         elif ctx.func_call():
-            return self.visit(ctx.func_call(0))
+            return ctx.func_call().accept(self)[0]
         else:
             return self.visit(ctx.literal())
     
@@ -114,6 +114,9 @@ class ASTGeneration(MT22Visitor):
         return [FuncCall(id, exprlist), id, exprlist]
     
     #literal: INT_LIT | FLOAT_LIT | BOOL_LIT | STRING_LIT | array_lit;
+    def toBool(self, x: str):
+        return x.lower() == "true"
+    
     def visitLiteral(self, ctx: MT22Parser.LiteralContext):
         if ctx.INT_LIT():
             return IntegerLit(int(ctx.INT_LIT().getText()))
@@ -136,9 +139,9 @@ class ASTGeneration(MT22Visitor):
     #stmt_list: (stmt | var_decl) stmt_list | (stmt | var_decl);
     def visitStmt_list(self, ctx: MT22Parser.Stmt_listContext):
         if ctx.var_decl():
-            return [*self.visit(ctx.var_decl()), *self.visit(ctx.stmt_list())] if ctx.getChildCount() == 2 else self.visit(ctx.var_decl())
+            return [*ctx.var_decl().accept(self), *ctx.stmt_list().accept(self)] if ctx.getChildCount() == 2 else ctx.var_decl().accept(self)
         
-        return [self.visit(ctx.stmt()), *self.visit(ctx.stmt_list())] if ctx.getChildCount() == 2 else self.visit(ctx.stmt())
+        return [ctx.stmt().accept(self), *ctx.stmt_list().accept(self)] if ctx.getChildCount() == 2 else [ctx.stmt().accept(self)]
     
     #stmt: assign_stmt | if_stmt | for_stmt | while_stmt | do_while_stmt | break_stmt | continue_stmt | return_stmt | call_stmt | block_stmt;
     def visitStmt(self, ctx: MT22Parser.StmtContext):
@@ -158,10 +161,7 @@ class ASTGeneration(MT22Visitor):
     
     #if_stmt: IF LEFT_PAREN expr RIGHT_PAREN stmt (ELSE stmt)?;
     def visitIf_stmt(self, ctx: MT22Parser.If_stmtContext):
-        if ctx.getChildCount() == 5:
-            return IfStmt(self.visit(ctx.expr()), self.visit(ctx.getChild(1)), None)
-        else:
-            return IfStmt(self.visit(ctx.expr()), self.visit(ctx.getChild(1)), self.visit(ctx.getChild(2)))
+        return IfStmt(ctx.expr().accept(self), ctx.stmt(0).accept(self), ctx.stmt(1).accept(self) if ctx.stmt(1) else ctx.stmt(1))
     
     #for_stmt: FOR LEFT_PAREN initial_expr COMMA condition_expr COMMA upd8_expr RIGHT_PAREN stmt;
     def visitFor_stmt(self, ctx: MT22Parser.For_stmtContext):
@@ -201,12 +201,12 @@ class ASTGeneration(MT22Visitor):
     
     #call_stmt: func_call SEMI_COLON;
     def visitCall_stmt(self, ctx: MT22Parser.Call_stmtContext):
-        call = self.visit(ctx.func_call())
+        call = ctx.func_call().accept(self)
         return CallStmt(call[1], call[2])
     
     #block_stmt: LEFT_BRACE stmt_list? RIGHT_BRACE;
     def visitBlock_stmt(self, ctx: MT22Parser.Block_stmtContext):
-        return BlockStmt(self.visit(ctx.stmt_list()) if ctx.stmt_list() else [])
+        return BlockStmt(ctx.stmt_list().accept(self) if ctx.stmt_list() else [])
     
     #scalar_var: ID;
     def visitScalar_var(self, ctx: MT22Parser.Scalar_varContext):

@@ -1,2 +1,0 @@
-// A werird style
- /* comment */

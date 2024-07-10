@@ -1,7 +1,0 @@
-
-void reverse(s: string, from: integer, to: integer) {
-  temp: string = s;
-  for (i = 0, i < to - from, i++) {
-    s[from + i] = temp[to - 1 - i];
-  }
-}

@@ -1,0 +1,3 @@
+Program([
+	FuncDecl(reverse, VoidType, [Param(s, StringType), Param(from, IntegerType), Param(to, IntegerType)], None, BlockStmt([VarDecl(temp, StringType, Id(s)), ForStmt(AssignStmt(Id(i), IntegerLit(0)), BinExpr(<, Id(i), BinExpr(-, Id(to), Id(from))), BinExpr(+, Id(i), IntegerLit(1)), BlockStmt([AssignStmt(ArrayCell(s, [BinExpr(+, Id(from), Id(i))]), ArrayCell(temp, [BinExpr(-, BinExpr(-, Id(to), IntegerLit(1)), Id(i))]))]))]))
+])
