@@ -163,4 +163,85 @@ class StaticChecker(Visitor):
                 self.raise_(Invalid(Parameter(), name))
     
     def visitProgram(self, ast: Program, c):
-        print(a)
+        for declares in ast.decls:
+            if type(declares) is FuncDecl:
+                return_type = declares.return_type
+                param = []
+                LookUp.check(declares.name, self.env[0], lambda: self.raise_(
+                    Redeclared(Function(), declares.name)
+                ))
+                for ele in declares.params:
+                    for x in param:
+                        if x["name"] == ele.name: self.raise_(Redeclared(Parameter(), ele.name))
+                    
+                    p = {"type": ele.typ, "kind": Variable(), "inherit": ele.inherit, "out": ele.out, "name": ele.name}
+                    param.append(p)
+
+                self.env[0][declares.name] = {"type": return_type, "kind": Function(), "params": param}
+        
+        entry = False
+        for declares in ast.decls:
+            if type(declares) is FuncDecl:
+                return_type = declares.return_type
+                par = declares.params
+                if type(declares) is FuncDecl and declares.name == "main" and TUtils.voidType(return_type) and lens(par) == 0:
+                    entry = True
+            self.visit(declares, (self.env, None))
+        
+        if not entry: self.raise_(NoEntryPoint())
+
+        return ""
+    
+    def visitVarDecl(self, ast: VarDecl, c):
+        (o, _) = c
+        name = ast.name
+        LookUp.check(name, o[0], lambda: self.raise_(Redeclared(Variable(), name)))
+        typ = ast.typ
+
+        if not TUtils.noneCheck(ast.init):
+            if TUtils.arrayLit(ast.init):
+                self.il_arr_lit = {"type": typ, "ast": ast, "astInit": ast.init}
+            
+            if TUtils.arrayType(typ):
+                a_dimen = typ.dimensions
+                a_type = typ.typ
+                self.il_arr_lit = {"type": a_type, "ast": ast, "astInit": ast.init}
+
+                if not TUtils.arrayLit(ast.init) and not TUtils.arrayCell(ast.init): self.raise_(TypeMismatchInVarDecl(ast))
+
+                init = self.visit(ast.init, (o, a_type))
+                dimen_lst = Array.getDi(init["type"])
+                dimen_lst = dimen_lst[:-1]
+
+                if Array.isDiMatch(a_dimen, dimen_lst, lambda: self.raise_(TypeMismatchInVarDecl(ast))):
+                    o[0][name] = {"type": typ, "kind": Variable(), "dimensions": dimen_lst}
+                self.il_arr_lit = None
+            else:
+                ini = self.visit(ast.init, (o, typ))
+                ini_typ = ini["type"]
+                
+                if TUtils.autoType(ini_typ):
+                    ini["type"] = typ
+                    o[0][name] = {"type": ini_typ, "kind": Variable()}
+                    return
+                
+                if TUtils.autoType(typ):
+                    if TUtils.arrayCheck(ini_typ):
+                        ini_typ = Array.getDi(ini_typ)[-1]
+                    o[0][name] = {"type": ini_typ, "kind": Variable()}
+                    return
+                
+                if TUtils.arrayLit(ast.init): self.raise_(TypeMismatchInVarDecl(ast))
+
+                if TUtils.intType(ini_typ) and TUtils.floatType(typ):
+                    o[0][name] = {"type": FloatType(), "kind": Variable()}
+                    return
+                
+                if not TUtils.sameTypeCheck(typ, ini_typ): self.raise_(TypeMismatchInVarDecl(ast))
+
+                o[0][name] = {"type": ini_typ, "kind": Variable()}
+                self.il_arr_lit = None
+        else:
+            if TUtils.autoType(typ): self.raise_(Invalid(Variable(), name))
+            o[0][name] = {"type": ini_typ, "kind": Variable()}
+            self.il_arr_lit = None
