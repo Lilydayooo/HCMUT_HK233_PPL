@@ -162,8 +162,8 @@ class StaticChecker(Visitor):
             if not TUtils.noneCheck(par) and par["inherit"]:
                 self.raise_(Invalid(Parameter(), name))
     
-    def visitProgram(self, ast: Program, c):
-        for declares in ast.decls:
+    def visitProgram(self, ctx: Program, c):
+        for declares in ctx.decls:
             if type(declares) is FuncDecl:
                 return_type = declares.return_type
                 param = []
@@ -180,7 +180,7 @@ class StaticChecker(Visitor):
                 self.env[0][declares.name] = {"type": return_type, "kind": Function(), "params": param}
         
         entry = False
-        for declares in ast.decls:
+        for declares in ctx.decls:
             if type(declares) is FuncDecl:
                 return_type = declares.return_type
                 par = declares.params
@@ -192,32 +192,32 @@ class StaticChecker(Visitor):
 
         return ""
     
-    def visitVarDecl(self, ast: VarDecl, c):
-        (o, _) = c
-        name = ast.name
+    def visitVarDecl(self, ctx: VarDecl, cont):
+        (o, _) = cont
+        name = ctx.name
         LookUp.check(name, o[0], lambda: self.raise_(Redeclared(Variable(), name)))
-        typ = ast.typ
+        typ = ctx.typ
 
-        if not TUtils.noneCheck(ast.init):
-            if TUtils.arrayLit(ast.init):
-                self.il_arr_lit = {"type": typ, "ast": ast, "astInit": ast.init}
+        if not TUtils.noneCheck(ctx.init):
+            if TUtils.arrayLit(ctx.init):
+                self.il_arr_lit = {"type": typ, "ast": ctx, "astInit": ctx.init}
             
             if TUtils.arrayType(typ):
                 a_dimen = typ.dimensions
                 a_type = typ.typ
-                self.il_arr_lit = {"type": a_type, "ast": ast, "astInit": ast.init}
+                self.il_arr_lit = {"type": a_type, "ast": ctx, "astInit": ctx.init}
 
-                if not TUtils.arrayLit(ast.init) and not TUtils.arrayCell(ast.init): self.raise_(TypeMismatchInVarDecl(ast))
+                if not TUtils.arrayLit(ctx.init) and not TUtils.arrayCell(ctx.init): self.raise_(TypeMismatchInVarDecl(ctx))
 
-                init = self.visit(ast.init, (o, a_type))
+                init = self.visit(ctx.init, (o, a_type))
                 dimen_lst = Array.getDi(init["type"])
                 dimen_lst = dimen_lst[:-1]
 
-                if Array.isDiMatch(a_dimen, dimen_lst, lambda: self.raise_(TypeMismatchInVarDecl(ast))):
+                if Array.isDiMatch(a_dimen, dimen_lst, lambda: self.raise_(TypeMismatchInVarDecl(ctx))):
                     o[0][name] = {"type": typ, "kind": Variable(), "dimensions": dimen_lst}
                 self.il_arr_lit = None
             else:
-                ini = self.visit(ast.init, (o, typ))
+                ini = self.visit(ctx.init, (o, typ))
                 ini_typ = ini["type"]
                 
                 if TUtils.autoType(ini_typ):
@@ -231,13 +231,13 @@ class StaticChecker(Visitor):
                     o[0][name] = {"type": ini_typ, "kind": Variable()}
                     return
                 
-                if TUtils.arrayLit(ast.init): self.raise_(TypeMismatchInVarDecl(ast))
+                if TUtils.arrayLit(ctx.init): self.raise_(TypeMismatchInVarDecl(ctx))
 
                 if TUtils.intType(ini_typ) and TUtils.floatType(typ):
                     o[0][name] = {"type": FloatType(), "kind": Variable()}
                     return
                 
-                if not TUtils.sameTypeCheck(typ, ini_typ): self.raise_(TypeMismatchInVarDecl(ast))
+                if not TUtils.sameTypeCheck(typ, ini_typ): self.raise_(TypeMismatchInVarDecl(ctx))
 
                 o[0][name] = {"type": ini_typ, "kind": Variable()}
                 self.il_arr_lit = None
@@ -245,3 +245,69 @@ class StaticChecker(Visitor):
             if TUtils.autoType(typ): self.raise_(Invalid(Variable(), name))
             o[0][name] = {"type": ini_typ, "kind": Variable()}
             self.il_arr_lit = None
+
+    def visitParamDecl(self, ctx: ParamDecl, cont):
+        (o, _) = cont
+        name = ctx.name
+        if name in o[0]: 
+            if o[0][name]["inherit"]: self.raise_(Invalid(Parameter(), name))
+        
+        typ = ctx.name
+        inh = ctx.inherit
+        out = ctx.out
+
+        result = {"type": typ, "kind": Variable(), "inherit": inh, "out": out}
+        o[0][name] = result
+        result["name"] = name
+        return result
+    
+    def visitFuncDecl(self, ctx: FuncDecl, cont):
+        (o, _) = cont
+        name = ctx.name
+        sym = self.lookup(name, StaticChecker.global_env, lambda symbol: symbol.name)
+
+        if not TUtils.noneCheck(sym): self.raise_(Redeclared(Function(), name))
+
+        type_return = ctx.return_type
+        inher = ctx.inherit
+        b = ctx.body
+        new_o = [{}] + o
+        self.setFunctionDecl(True, {"type": type_return}, name)
+
+        if not TUtils.noneCheck(inher):
+            inherit_funct = LookUp.lookup(inher, new_o, lambda: self.raise_(Undeclared(Function(), inher)), Function)
+
+            if len(inherit_funct["params"]) != 0:
+                for par in inherit_funct["params"]:
+                    if par["inherit"]: new_o[0][par["name"]] = par
+                
+                for ele in ctx.params:
+                    p = self.visit(ele, (new_o, None))
+
+                if len(b.body) == 0: self.raise_(InvalidStatementInFunction(name))
+
+                first = b.body[0]
+                if not isinstance(first, CallStmt): self.raise_(InvalidStatementInFunction(name))
+
+                first_name = first.name
+                if first_name != "super" and first_name != "preventDefault": self.raise_(InvalidStatementInFunction(name))
+
+                self.f_decl["inherit"]["super_or_preventDefault"] = "preventDefault" if first_name == "preventDefault" else "super" if first_name == "super" else None
+            else:
+                for ele in ctx.params:
+                    p = self.visit(ele, (new_o, None))
+
+                if len(b.body) != 0:
+                    first = b.body[0]
+                    if isinstance(first, CallStmt):
+                        first_name = first.name
+                        self.f_decl["inherit"]["super_or_preventDefault"] = "preventDefault" if first_name == "preventDefault" else "super" if first_name == "super" else None
+                    else:
+                        self.f_decl["inherit"]["super_or_preventDefault"] = "super"
+        
+            self.f_decl["inherit"]["func"] = {**inherit_funct, **{"name": inher}}
+        else:
+            for ele in ctx.params:
+                p = self.visit(ele, (new_o, None))
+        self.visit(b, (new_o, None))
+        self.resetFunctionDecl()
