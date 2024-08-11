@@ -193,9 +193,9 @@ class StaticChecker(Visitor):
         return ""
     
     def visitVarDecl(self, ctx: VarDecl, cont):
-        (o, _) = cont
+        (obj, _) = cont
         name = ctx.name
-        LookUp.check(name, o[0], lambda: self.raise_(Redeclared(Variable(), name)))
+        LookUp.check(name, obj[0], lambda: self.raise_(Redeclared(Variable(), name)))
         typ = ctx.typ
 
         if not TUtils.noneCheck(ctx.init):
@@ -209,60 +209,60 @@ class StaticChecker(Visitor):
 
                 if not TUtils.arrayLit(ctx.init) and not TUtils.arrayCell(ctx.init): self.raise_(TypeMismatchInVarDecl(ctx))
 
-                init = self.visit(ctx.init, (o, a_type))
+                init = self.visit(ctx.init, (obj, a_type))
                 dimen_lst = Array.getDi(init["type"])
                 dimen_lst = dimen_lst[:-1]
 
                 if Array.isDiMatch(a_dimen, dimen_lst, lambda: self.raise_(TypeMismatchInVarDecl(ctx))):
-                    o[0][name] = {"type": typ, "kind": Variable(), "dimensions": dimen_lst}
+                    obj[0][name] = {"type": typ, "kind": Variable(), "dimensions": dimen_lst}
                 self.il_arr_lit = None
             else:
-                ini = self.visit(ctx.init, (o, typ))
+                ini = self.visit(ctx.init, (obj, typ))
                 ini_typ = ini["type"]
                 
                 if TUtils.autoType(ini_typ):
                     ini["type"] = typ
-                    o[0][name] = {"type": ini_typ, "kind": Variable()}
+                    obj[0][name] = {"type": ini_typ, "kind": Variable()}
                     return
                 
                 if TUtils.autoType(typ):
                     if TUtils.arrayCheck(ini_typ):
                         ini_typ = Array.getDi(ini_typ)[-1]
-                    o[0][name] = {"type": ini_typ, "kind": Variable()}
+                    obj[0][name] = {"type": ini_typ, "kind": Variable()}
                     return
                 
                 if TUtils.arrayLit(ctx.init): self.raise_(TypeMismatchInVarDecl(ctx))
 
                 if TUtils.intType(ini_typ) and TUtils.floatType(typ):
-                    o[0][name] = {"type": FloatType(), "kind": Variable()}
+                    obj[0][name] = {"type": FloatType(), "kind": Variable()}
                     return
                 
                 if not TUtils.sameTypeCheck(typ, ini_typ): self.raise_(TypeMismatchInVarDecl(ctx))
 
-                o[0][name] = {"type": ini_typ, "kind": Variable()}
+                obj[0][name] = {"type": ini_typ, "kind": Variable()}
                 self.il_arr_lit = None
         else:
             if TUtils.autoType(typ): self.raise_(Invalid(Variable(), name))
-            o[0][name] = {"type": ini_typ, "kind": Variable()}
+            obj[0][name] = {"type": ini_typ, "kind": Variable()}
             self.il_arr_lit = None
 
     def visitParamDecl(self, ctx: ParamDecl, cont):
-        (o, _) = cont
+        (obj, _) = cont
         name = ctx.name
-        if name in o[0]: 
-            if o[0][name]["inherit"]: self.raise_(Invalid(Parameter(), name))
+        if name in obj[0]: 
+            if obj[0][name]["inherit"]: self.raise_(Invalid(Parameter(), name))
         
         typ = ctx.name
         inh = ctx.inherit
         out = ctx.out
 
         result = {"type": typ, "kind": Variable(), "inherit": inh, "out": out}
-        o[0][name] = result
+        obj[0][name] = result
         result["name"] = name
         return result
     
     def visitFuncDecl(self, ctx: FuncDecl, cont):
-        (o, _) = cont
+        (obj, _) = cont
         name = ctx.name
         sym = self.lookup(name, StaticChecker.global_env, lambda symbol: symbol.name)
 
@@ -271,7 +271,7 @@ class StaticChecker(Visitor):
         type_return = ctx.return_type
         inher = ctx.inherit
         b = ctx.body
-        new_o = [{}] + o
+        new_o = [{}] + obj
         self.setFunctionDecl(True, {"type": type_return}, name)
 
         if not TUtils.noneCheck(inher):
@@ -311,3 +311,129 @@ class StaticChecker(Visitor):
                 p = self.visit(ele, (new_o, None))
         self.visit(b, (new_o, None))
         self.resetFunctionDecl()
+
+    def visitAssignStmt(self, ctx: AssignStmt, cont):
+        (obj, _) = cont
+        left_type = None
+        left_expr = None
+        if self.loop["flag"]:
+            name = ctx.lhs.name
+            id = LookUp.lookup(name, obj, lambda: None, Variable)
+            if TUtils.noneCheck(id):
+                obj[0][name] = {"type": IntegerType(), "kind": Variable()}
+                left_type = IntegerType()
+            else:
+                if TUtils.autoType(id["type"]): id["type"] = IntegerType()
+                else:
+                    if not TUtils.intType(id["type"]): self.raise_(TypeMismatchInStatement(self.loop["ast"]))
+                left_type = id["type"]
+        else:
+            left_expr = self.visit(ctx.lhs, cont)
+            left_type = left_expr["type"]
+            if TUtils.arrayType(left_type) or TUtils.voidType(left_type): self.raise_(TypeMismatchInStatement(ctx))
+        
+        right_expr = self.visit(ctx.rhs, cont)
+        right_type = right_expr["type"]
+        if TUtils.autoType(left_type):
+            left_expr["type"] = left_type = right_type
+        elif TUtils.autoType(right_type):
+            right_expr["type"] = right_type = left_type
+
+        if not (TUtils.floatType(left_type) and TUtils.intType(right_type)):
+            if not TUtils.sameTypeCheck(left_type, right_type):
+                self.raise_(TypeMismatchInStatement(ctx if not self.loop["flag"] else self.loop["ast"]))
+
+    def visitBlockStmt(self, ctx: BlockStmt, cont):
+        (obj, t) = cont
+        reduce(lambda _, ele: self.visit(ele, (obj if self.f_decl["flag"] or self.loop["flag"] else [{}] + obj, t)), ctx.body, [])
+
+    def visitIfStmt(self, ctx: IfStmt, cont):
+        self.addIfEle(True)
+        cond = self.visit(ctx.cond, cont)
+        if not TUtils.boolType(cond["type"]): self.raise_(TypeMismatchInStatement(ctx))
+
+        self.visit(ctx.tstmt, cont)
+        if not TUtils.noneCheck(ast.fstmt): self.visit(ctx.fstmt, cont)
+
+        self.removeIfEle()
+
+    def visitForStmt(self, ctx: ForStmt, cont):
+        (obj, t) = cont
+        self.set_loop(True, ctx)
+        self.addForEle(True)
+        o_new = [{}] + obj
+
+        self.visit(ctx.init, {o_new, t})
+        self.reset_loop()
+
+        cond_expr = self.visit(ctx.cond, (o_new, t))
+        cond_type = cond_expr["type"]
+        if TUtils.autoType(cond_type): cond_type = cond_expr["type"] = BooleanType()
+        if not TUtils.boolType(cond_type): self.raise_(TypeMismatchInStatement(ctx))
+        
+        up8_type = self.visit(ctx.upd, (o_new, t))["type"]
+        if not TUtils.intType(up8_type): self.raise_(TypeMismatchInStatement(ctx))
+
+        self.visit(ctx.stmt, (o_new, t))
+        self.removeForEle()
+
+    def visitWhileStmt(self, ctx: WhileStmt, cont):
+        self.addWhileEle(True)
+
+        cond_expr = self.visit(ctx.cond, cont)
+        cond_type = cond_expr["type"]
+        if TUtils.autoType(cond_type): cond_type = cond_expr["type"] = BooleanType()
+        if not TUtils.boolType(cond_type): self.raise_(TypeMismatchInStatement(ctx))
+
+        self.visit(ctx.stmt, cont)
+        self.removeWhileEle
+
+    def visitDoWhileStmt(self, ctx: DoWhileStmt, cont):
+        self.addDoWhileEle(True)
+        self.visit(ctx.stmt, cont)
+
+        cond_expr = self.visit(ctx.cond, cont)
+        cond_type = cond_expr["type"]
+        if TUtils.autoType(cond_type): cond_type = cond_expr["type"] = BooleanType()
+        if TUtils.boolType(cond_type): self.raise_(TypeMismatchInStatement(ctx))
+        self.removeDoWhileEle()
+
+    def visitBreakStmt(self, ctx: BreakStmt, cont):
+        if self.getForSize() == 0 and self.getWhileSize() == 0 and self.getDoWhileSize() == 0: self.raise_(MustInLoop(ctx))
+    
+    def visitContinueStmt(self, ctx: ContinueStmt, cont):
+        if self.getForSize() == 0 and self.getWhileSize() == 0 and self.getDoWhileSize() == 0: self.raise_(MustInLoop(ctx))
+
+    def visitReturnStmt(self, ctx: ReturnStmt, cont):
+        (obj, _) = cont
+
+        if self.f_decl["flag"]:
+            f_type = self.f_decl["return_type"]["type"]
+
+            exp = None
+            exp_type = VoidType()
+
+            if not TUtils.noneCheck(ctx.expr):
+                exp = self.visit(ctx.expr, cont)
+                exp_type = exp["type"]
+
+            if TUtils.autoType(f_type):
+                self.f_decl["return_type"] = TUtils.interType(
+                    self.f_decl["name"], exp_type, obj, Function
+                )
+                f_type = self.f_decl["return_type"]["type"]
+
+            elif TUtils.autoType(exp_type):
+                exp_type = exp["type"] = f_type
+
+            if self.getForSize() != 0 or self.getWhileSize() != 0 or self.getDoWhileSize() != 0 or self.getIfSize() != 0:
+                if not (TUtils.floatType(f_type) and TUtils.intType(exp_type)):
+                    if not TUtils.sameTypeCheck(exp_type, f_type):
+                        self.raise_(TypeMismatchInStatement(ctx))
+            
+            else:
+                if not self.f_decl["has_first_stmt_return"]:
+                    if not (TUtils.floatType(f_type) and TUtils.intType(exp_type)):
+                        if not TUtils.sameTypeCheck(exp_type, f_type):
+                            self.raise_(TypeMismatchInStatement(ctx))
+                    self.f_decl["has_first_stmt_return"] = True
