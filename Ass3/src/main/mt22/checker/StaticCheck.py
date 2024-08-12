@@ -437,3 +437,44 @@ class StaticChecker(Visitor):
                         if not TUtils.sameTypeCheck(exp_type, f_type):
                             self.raise_(TypeMismatchInStatement(ctx))
                     self.f_decl["has_first_stmt_return"] = True
+    
+    def visitCallStmt(self, ctx: CallStmt, cont):
+        (obj, _) = cont
+        name = ctx.name
+        sym = self.lookup(name, StaticChecker.global_env, lambda symbol: symbol.name)
+        par = None
+        f_type = None
+        funct = dict()
+
+        if TUtils.noneCheck(sym):
+            funct = LookUp.lookup(name, obj, lambda: self.raise_(Undeclared(Function(), name)), Function)
+            f_type = funct["type"]
+            par = funct["params"]
+
+        else:
+            if name == "super" or name== "preventDefault":
+                if (self.f_decl["flag"] and TUtils.noneCheck(self.f_decl["inherit"]["func"])) or TUtils.noneCheck(self.f_decl["inherit"]["super_or_preventDefault"]):
+                    self.raise_(InvalidStatementInFunction(self.f_decl["name"]))
+                par = self.f_decl["inherit"]["func"]["params"] if name == "super" else sym.mtyp.ptype
+            else:
+                par = list(map(lambda p: self.visit(p, cont), sym.mtyp.ptype))
+            f_type = sym.mtyp.rtype
+        
+        if name!= "super":
+            if len(ctx.args) != len(par): self.raise_(TypeMismatchInStatement(ctx))
+        else:
+            if len(par) < len(ctx.args): self.raise_(TypeMismatchInExpression(ctx.args[len(par)]))
+            if len(par) > len(ctx.args): self.raise_(TypeMismatchInExpression(None))
+
+        for ele in zip(par, ctx.args):
+            ele0_type = ele[0]["type"]
+            ele_type = self.visit(ele[1], (obj, ele0_type))["type"]
+
+            if TUtils.arrayCheck(ele_type): ele_type = Array.getDi(ele_type)[-1]
+            if TUtils.autoType(ele0_type): ele0_type = ele[0]["type"] = ele_type
+
+            if not (TUtils.floatType(ele0_type) and TUtils.intType(ele_type)):
+                if not TUtils.autoType(ele0_type):
+                    if not TUtils.sameTypeCheck(ele0_type, ele_type):
+                        self.raise_(TypeMismatchInExpression(ele[1]) if name == "super" else TypeMismatchInStatement(ctx))
+        return {"type": f_type}
