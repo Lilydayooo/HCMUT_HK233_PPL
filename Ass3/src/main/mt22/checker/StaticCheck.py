@@ -478,3 +478,116 @@ class StaticChecker(Visitor):
                     if not TUtils.sameTypeCheck(ele0_type, ele_type):
                         self.raise_(TypeMismatchInExpression(ele[1]) if name == "super" else TypeMismatchInStatement(ctx))
         return {"type": f_type}
+
+    def visitBinExpr(self, ctx: BinExpr, cont):
+        (obj, t) = cont
+        l_type = None
+        r_type = None
+        oper = ctx.op
+
+        if isinstance(ctx.right, FuncCall) and isinstance(ctx.left, FuncCall):
+            name_r = ctx.right.name
+            sym_right = self.lookup(name_r, StaticChecker.global_env, lambda sym: sym.name)
+            funct_right_type = LookUp.lookup(name_r, obj, lambda: self.raise_(Undeclared(Function(), name_r)), Function)["type"] if TUtils.noneCheck(sym_right) else sym_right.mtyp.rtype
+
+            name_l = ctx.left.name
+            funct_left_type = None
+            sym_left = self.lookup(name_l, StaticChecker.global_env, lambda sym: sym.name)
+
+            funct_left_type = LookUp.lookup(name_l, obj, lambda: self.raise_(Undeclared(Function(), name_l)), Function)["type"] if TUtils.noneCheck(sym_left) else sym_left.mtyp.rtype
+
+            if TUtils.autoType(funct_right_type) and TUtils.autoType(funct_left_type):
+                l_type = self.visit(ctx.left, cont)["type"]
+                r_type = self.visit(ctx.right, cont)["type"]
+            elif TUtils.autoType(funct_left_type):
+                l_type = self.visit(ctx.left, (obj, funct_right_type))["type"]
+                r_type = funct_right_type
+            elif TUtils.autoType(funct_right_type):
+                l_type = funct_left_type
+                r_type = self.visit(ctx.right, (obj, funct_left_type))["type"]
+
+        elif isinstance(ctx.right, FuncCall):
+            name_r = ctx.right.name
+            sym_right = self.lookup(name_r, StaticChecker.global_env, lambda sym: sym.name)
+            funct_right_type = LookUp.lookup(name_r, obj, lambda: self.raise_(Undeclared(Function(), name_r)), Function)["type"] if TUtils.noneCheck(sym_right) else sym_right.mtyp.rtype
+
+            l_type = self.visit(ctx.left, cont)["type"]
+            r_type = self.visit(ctx.right, (obj, l_type if TUtils.autoType(funct_right_type) else t))["type"]
+
+        elif isinstance(ctx.left, FuncCall):
+            name_l = ctx.left.name
+            funct_left_type = None
+            sym_left = self.lookup(name_l, StaticChecker.global_env, lambda sym: sym.name)
+
+            funct_left_type = LookUp.lookup(name_l, obj, lambda: self.raise_(Undeclared(Function(), name_l)), Function)["type"] if TUtils.noneCheck(sym_left) else sym_left.mtyp.rtype
+            r_type = self.visit(ctx.right, cont)["type"]
+            l_type = self.visit(ctx.left, (obj, r_type if TUtils.autoType(funct_left_type) else t))["type"]
+
+        else:
+            l_expr = self.visit(ctx.left, cont)
+            l_type = l_expr["type"]
+
+            r_expr = self.visit(ctx.right, cont)
+            r_type = r_expr["type"]
+
+            if TUtils.autoType(l_type):
+                l_type = l_expr["type"] = r_type
+            elif TUtils.autoType(r_type):
+                r_type = r_expr["type"] = l_type
+
+        if oper in ["+", "-", "*", "/"]:
+            if not TUtils.inList(l_type, [IntegerType, FloatType]) or not TUtils.inList(r_type, [IntegerType, FloatType]):
+                self.raise_(TypeMismatchInExpression(ctx))
+
+            if TUtils.floatType(l_type) or TUtils.floatType(r_type):
+                return {"type": FloatType()}
+            return {"type": IntegerType()}
+        
+        if oper == "%":
+            if not TUtils.intType(l_type) or not TUtils.intType(r_type): self.raise_(TypeMismatchInExpression(ctx))
+            return {"type": IntegerType()}
+        
+        if oper == "::":
+            if not TUtils.stringType(l_type) or not TUtils.stringType(r_type): self.raise_(TypeMismatchInExpression(ctx))
+            return {"type": StringType()}
+        
+        if oper in ["==", "!="]:
+            if not TUtils.inList(l_type, [IntegerType, BooleanType]) or not TUtils.inList(r_type, [IntegerType, BooleanType]):
+                self.raise_(TypeMismatchInExpression(ctx))
+            return {"type": BooleanType()}
+        
+        if oper in ["&&", "||"]:
+            if not TUtils.boolType(l_type) or not TUtils.boolType(r_type): self.raise_(TypeMismatchInExpression(ctx))
+            return {"type": BooleanType()}
+        
+    def visitUnExpr(self, ctx: UnExpr, cont):
+        exp = self.visit(ctx.val, cont)
+        oper = self.oper
+        typ = exp["type"]
+
+        if oper == "!":
+            if not TUtils.boolType(typ) or not TUtils.boolType(typ): self.raise_(TypeMismatchInExpression(ctx))
+            return {"type": BooleanType()}
+        if oper == "-":
+            if not TUtils.inList(typ, [IntegerType, FloatType]): self.raise_(TypeMismatchInExpression(ctx))
+            return {"type": typ}
+        
+    def visitId(self, ctx: Id, cont):
+        (obj, _) = cont
+        return LookUp.lookup(ctx.name, obj, lambda: self.raise_(Undeclared(Identifier(), ctx.name)), Variable)
+    
+    def visitArrayCell(self, ctx: ArrayCell, cont):
+        id = self.visit(Id(ctx.name), cont)
+        if not TUtils.arrayType(id["type"]) and not TUtils.arrayCheck(id["type"]): self.raise_(TypeMismatchInExpression(ctx))
+
+        if TUtils.arrayCheck(id["type"]): return {"type": id["type"]}
+
+        reduce(lambda _, ele: self.raise_(TypeMismatchInExpression(ctx)) if not TUtils.intType(self.visit(ele, cont)["type"]) else None, ctx.cell, [])
+
+        dimen = id["type"].dimensions[len(ctx.cell):][::-1]
+
+        if (len(dimen) != 0):
+            result = reduce(lambda acc, ele: Array(ele, acc), dimen[1:], Array(dimen[0], id["type"].typ if TUtils.arrayType(id["type"]) else id["type"]))
+            return {"type": result}
+        
+        return {"type": id["type"].typ}
