@@ -591,3 +591,110 @@ class StaticChecker(Visitor):
             return {"type": result}
         
         return {"type": id["type"].typ}
+    
+    def visitIntegerLit(self, ctx: IntegerLit, cont):
+        return {"type": IntegerType()}
+    
+    def visitFloatLit(self, ctx: FloatLit, cont):
+        return {"type": FloatType()}
+    
+    def visitStringLit(self, ctx: StringLit, cont):
+        return {"type": StringType()}
+    
+    def visitBooleanLit(self, ctx: BooleanLit, cont):
+        return {"type": BooleanType()}
+    
+    def visitArrayLit(self, ctx: ArrayLit, cont):
+        (obj, t) = cont
+        exp_list = ctx.explist
+
+        res = list(map[(lambda expr: self.visit(expr, cont), exp_list)])
+
+        if len(res) != 0:
+            first_ele_type = res[0]["type"]
+            if TUtils.arrayCheck(first_ele_type):
+                top_val = first_ele_type
+                for x in res:
+                    if x["type"].val >= top_val.val:
+                        top_val = x["type"]
+                return {"type": Array(len(exp_list), top_val)}
+            
+            list(map(lambda result: self.raise_(IllegalArrayLiteral(self.il_arr_lit["astInit"])) if not TUtils.sameTypeCheck(result["type"] if not TUtils.arrayType(result["type"]) else result["type"].typ, first_ele_type) else None, res))
+
+            self.il_arr_lit["first_el_type"] = first_ele_type
+
+            for result in res:
+                res_type = result["type"] if not TUtils.arrayType(result["type"]) else result["type"].typ
+                if not TUtils.autoType(t):
+                    if (not TUtils.sameTypeCheck(self.il_arr_lit["type"], res_type)) and (not (TUtils.floatType(self.il_arr_lit["type"]) and TUtils.intType(res_type))) and not TUtils.arrayCheck(res_type):
+                        self.raise_(TypeMismatchInStatement(self.il_arr_lit["ast"]))
+            return {"type": Array(len(exp_list), first_ele_type)}
+        return {"type": Array(0, t)}
+    
+    def visitFuncCall(self, ctx: FuncCall, cont):
+        (obj, t) = cont
+        name = ctx.name
+        sym = self.lookup(name, StaticChecker.global_env, lambda symbol: symbol.name)
+        par = None
+        funct_type = None
+        funct = dict()
+
+        if TUtils.noneCheck(sym):
+            funct = LookUp.lookup(name, obj, lambda: self.raise_(Undeclared(Function(), name)), Function)
+            funct_type = funct["type"]
+            par = funct["params"]
+
+        else:
+            if name== "super" or name== "preventDefault":
+                if self.f_decl["flag"] and TUtils.noneCheck(self.f_decl["inherit"]["func"]):
+                    self.raise_(InvalidStatementInFunction(self.f_decl["name"]))
+                par = self.f_decl["inherit"]["func"]["params"] if name == "super" else sym.mtyp.ptype
+            else:
+                par = list(map(lambda param: self.visit(param, cont), sym.mtyp.ptype))
+            funct_type = sym.mtyp.rtype
+
+        if name!= "super":
+            if len(ctx.args) != len(par) or TUtils.voidType(funct_type): self.raise_(TypeMismatchInExpression(ctx))
+        else:
+            if len(par) < len(ctx.args): self.raise_(TypeMismatchInExpression(ctx.args[len(par)]))
+            if len(par) > len(ctx.args): self.raise_(TypeMismatchInExpression(None))
+
+        for ele in zip(par, ctx.args):
+            ele0_type = ele[0]["type"]
+            ele_type = self.visit(ele[1], (obj, ele0_type))["type"]
+            if TUtils.arrayCheck(ele_type):
+                ele_type = Array.getDi(ele_type)[-1]
+            if TUtils.autoType(ele0_type):
+                ele0_type = ele[0]["type"] = ele_type
+
+            if not (TUtils.floatType(ele0_type) and TUtils.intType(ele_type)):
+                if not TUtils.autoType(ele0_type):
+                    if not TUtils.sameTypeCheck(ele0_type, ele_type):
+                        self.raise_(TypeMismatchInExpression(ele[1] if name == "super" else ctx))
+        
+        if TUtils.autoType(funct_type) and TUtils.noneCheck(sym):
+            funct_type = TUtils.interType(name, t, obj, Function)["type"]
+            funct["type"] = funct_type
+
+        return {"type": funct_type}
+    
+    def visitIntegerType(self, ctx: IntegerType, cont):
+        return {"type": IntegerType()}
+    
+    def visitFloatType(self, ctx: FloatType, cont):
+        return {"type": FloatType()}
+
+    def visitStringType(self, ctx: StringType, cont):
+        return {"type": StringType()}
+
+    def visitBooleanType(self, ctx: BooleanType, cont):
+        return {"type": BooleanType()}
+
+    def visitArrayType(self, ctx: ArrayType, cont):
+        return ctx
+
+    def visitAutoType(self, ctx: AutoType, cont):
+        return {"type": AutoType()}
+
+    def visitVoidType(self, ctx: VoidType, cont):
+        return {"type": VoidType()}
