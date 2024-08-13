@@ -6,19 +6,19 @@ from functools import reduce
 
 class MTyp:
     def __init__(self, ptype, rtype):
-        self.partype = ptype
-        self.rettype = rtype
+        self.ptype = ptype
+        self.rtype = rtype
 
 class Sym:
     def __init__(self, name, mtyp, val = None):
         self.name = name
-        self.mtype = mtyp
-        self.value = val
+        self.mtyp = mtyp
+        self.val = val
 
 class Array(Type):
     def __init__(self, value: int, element: Type) -> None:
-        self.val = value
-        self.el = element
+        self.value = value
+        self.element = element
     def __s__(self):
         return "Array({}, {})".format(str(self.value), str(self.element))
     @staticmethod
@@ -456,10 +456,10 @@ class StaticChecker(Visitor, Utils):
             if name == "super" or name== "preventDefault":
                 if (self.f_decl["flag"] and TUtils.noneCheck(self.f_decl["inherit"]["func"])) or TUtils.noneCheck(self.f_decl["inherit"]["super_or_preventDefault"]):
                     self.raise_(InvalidStatementInFunction(self.f_decl["name"]))
-                par = self.f_decl["inherit"]["func"]["params"] if name == "super" else sym.mtype.partype
+                par = self.f_decl["inherit"]["func"]["params"] if name == "super" else sym.mtyp.ptype
             else:
-                par = list(map(lambda p: self.visit(p, cont), sym.mtype.partype))
-            f_type = sym.mtype.rettype
+                par = list(map(lambda p: self.visit(p, cont), sym.mtyp.ptype))
+            f_type = sym.mtyp.rtype
         
         if name!= "super":
             if len(ctx.args) != len(par): self.raise_(TypeMismatchInStatement(ctx))
@@ -489,13 +489,13 @@ class StaticChecker(Visitor, Utils):
         if isinstance(ctx.right, FuncCall) and isinstance(ctx.left, FuncCall):
             name_r = ctx.right.name
             sym_right = self.lookup(name_r, StaticChecker.global_env, lambda sym: sym.name)
-            funct_right_type = LookUp.lookup(name_r, obj, lambda: self.raise_(Undeclared(Function(), name_r)), Function)["type"] if TUtils.noneCheck(sym_right) else sym_right.mtype.rettype
+            funct_right_type = LookUp.lookup(name_r, obj, lambda: self.raise_(Undeclared(Function(), name_r)), Function)["type"] if TUtils.noneCheck(sym_right) else sym_right.mtyp.rtype
 
             name_l = ctx.left.name
             funct_left_type = None
             sym_left = self.lookup(name_l, StaticChecker.global_env, lambda sym: sym.name)
 
-            funct_left_type = LookUp.lookup(name_l, obj, lambda: self.raise_(Undeclared(Function(), name_l)), Function)["type"] if TUtils.noneCheck(sym_left) else sym_left.mtype.rettype
+            funct_left_type = LookUp.lookup(name_l, obj, lambda: self.raise_(Undeclared(Function(), name_l)), Function)["type"] if TUtils.noneCheck(sym_left) else sym_left.mtyp.rtype
 
             if TUtils.autoType(funct_right_type) and TUtils.autoType(funct_left_type):
                 l_type = self.visit(ctx.left, cont)["type"]
@@ -510,7 +510,7 @@ class StaticChecker(Visitor, Utils):
         elif isinstance(ctx.right, FuncCall):
             name_r = ctx.right.name
             sym_right = self.lookup(name_r, StaticChecker.global_env, lambda sym: sym.name)
-            funct_right_type = LookUp.lookup(name_r, obj, lambda: self.raise_(Undeclared(Function(), name_r)), Function)["type"] if TUtils.noneCheck(sym_right) else sym_right.mtype.rettype
+            funct_right_type = LookUp.lookup(name_r, obj, lambda: self.raise_(Undeclared(Function(), name_r)), Function)["type"] if TUtils.noneCheck(sym_right) else sym_right.mtyp.rtype
 
             l_type = self.visit(ctx.left, cont)["type"]
             r_type = self.visit(ctx.right, (obj, l_type if TUtils.autoType(funct_right_type) else t))["type"]
@@ -520,7 +520,7 @@ class StaticChecker(Visitor, Utils):
             funct_left_type = None
             sym_left = self.lookup(name_l, StaticChecker.global_env, lambda sym: sym.name)
 
-            funct_left_type = LookUp.lookup(name_l, obj, lambda: self.raise_(Undeclared(Function(), name_l)), Function)["type"] if TUtils.noneCheck(sym_left) else sym_left.mtype.rettype
+            funct_left_type = LookUp.lookup(name_l, obj, lambda: self.raise_(Undeclared(Function(), name_l)), Function)["type"] if TUtils.noneCheck(sym_left) else sym_left.mtyp.rtype
             r_type = self.visit(ctx.right, cont)["type"]
             l_type = self.visit(ctx.left, (obj, r_type if TUtils.autoType(funct_left_type) else t))["type"]
 
@@ -649,10 +649,10 @@ class StaticChecker(Visitor, Utils):
             if name== "super" or name== "preventDefault":
                 if self.f_decl["flag"] and TUtils.noneCheck(self.f_decl["inherit"]["func"]):
                     self.raise_(InvalidStatementInFunction(self.f_decl["name"]))
-                par = self.f_decl["inherit"]["func"]["params"] if name == "super" else sym.mtype.partype
+                par = self.f_decl["inherit"]["func"]["params"] if name == "super" else sym.mtyp.ptype
             else:
-                par = list(map(lambda param: self.visit(param, cont), sym.mtype.partype))
-            funct_type = sym.mtype.rettype
+                par = list(map(lambda param: self.visit(param, cont), sym.mtyp.ptype))
+            funct_type = sym.mtyp.rtype
 
         if name!= "super":
             if len(ctx.args) != len(par) or TUtils.voidType(funct_type): self.raise_(TypeMismatchInExpression(ctx))
