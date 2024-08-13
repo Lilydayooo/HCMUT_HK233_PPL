@@ -91,7 +91,7 @@ class LookUp:
     def check(name, dict, f) -> None:
         if name in dict: f()
 
-class StaticChecker(Visitor):
+class StaticChecker(Visitor, Utils):
     global_env = [
         Sym("readInteger", MTyp([], IntegerType())),
         Sym("printInteger", MTyp([IntegerType()],VoidType())),
@@ -147,7 +147,7 @@ class StaticChecker(Visitor):
     def resetFunctionDecl(self):
         self.f_decl = {"flag": False, "return_type": None, "name": None, "inherit": {"func": None, "super_or_preventDefault": None}, "has_first_stmt_return": False}
 
-    def checking(self): return self.visit(self.ast, StaticChecker.global_env)
+    def check(self): return self.visit(self.ast, StaticChecker.global_env)
 
     def raise_(self, err): raise err
 
@@ -184,7 +184,7 @@ class StaticChecker(Visitor):
             if type(declares) is FuncDecl:
                 return_type = declares.return_type
                 par = declares.params
-                if type(declares) is FuncDecl and declares.name == "main" and TUtils.voidType(return_type) and lens(par) == 0:
+                if type(declares) is FuncDecl and declares.name == "main" and TUtils.voidType(return_type) and len(par) == 0:
                     entry = True
             self.visit(declares, (self.env, None))
         
@@ -243,7 +243,7 @@ class StaticChecker(Visitor):
                 self.il_arr_lit = None
         else:
             if TUtils.autoType(typ): self.raise_(Invalid(Variable(), name))
-            obj[0][name] = {"type": ini_typ, "kind": Variable()}
+            obj[0][name] = {"type": typ, "kind": Variable()}
             self.il_arr_lit = None
 
     def visitParamDecl(self, ctx: ParamDecl, cont):
@@ -279,7 +279,8 @@ class StaticChecker(Visitor):
 
             if len(inherit_funct["params"]) != 0:
                 for par in inherit_funct["params"]:
-                    if par["inherit"]: new_o[0][par["name"]] = par
+                    if par["inherit"]: 
+                        new_o[0][par["name"]] = par
                 
                 for ele in ctx.params:
                     p = self.visit(ele, (new_o, None))
@@ -353,7 +354,7 @@ class StaticChecker(Visitor):
         if not TUtils.boolType(cond["type"]): self.raise_(TypeMismatchInStatement(ctx))
 
         self.visit(ctx.tstmt, cont)
-        if not TUtils.noneCheck(ast.fstmt): self.visit(ctx.fstmt, cont)
+        if not TUtils.noneCheck(ctx.fstmt): self.visit(ctx.fstmt, cont)
 
         self.removeIfEle()
 
@@ -363,7 +364,7 @@ class StaticChecker(Visitor):
         self.addForEle(True)
         o_new = [{}] + obj
 
-        self.visit(ctx.init, {o_new, t})
+        self.visit(ctx.init, (o_new, t))
         self.reset_loop()
 
         cond_expr = self.visit(ctx.cond, (o_new, t))
