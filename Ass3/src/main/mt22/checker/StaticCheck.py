@@ -158,7 +158,7 @@ class StaticChecker(Visitor, Utils):
             )
             par = self.lookup(
                 name, f["params_inherit"], lambda param:param["name"]
-            )
+            ) 
             if not TUtils.noneCheck(par) and par["inherit"]:
                 self.raise_(Invalid(Parameter(), name))
     
