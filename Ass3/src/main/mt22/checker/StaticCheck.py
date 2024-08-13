@@ -126,7 +126,7 @@ class StaticChecker(Visitor, Utils):
     def removeWhileEle(self): self.whilestmt.pop()
     def removeDoWhileEle(self): self.do_whilestmt.pop()
 
-    def getIfSize(self): return len(self.forstmt)
+    def getIfSize(self): return len(self.ifstmt)
     def getForSize(self): return len(self.forstmt)
     def getWhileSize(self): return len(self.whilestmt)
     def getDoWhileSize(self): return len(self.do_whilestmt)
@@ -157,7 +157,7 @@ class StaticChecker(Visitor, Utils):
                 self.f_decl["inherit"]["func"]["name"], o, None, Function
             )
             par = self.lookup(
-                name, f["params_inherit"], lambda par:par["name"]
+                name, f["params_inherit"], lambda param:param["name"]
             )
             if not TUtils.noneCheck(par) and par["inherit"]:
                 self.raise_(Invalid(Parameter(), name))
@@ -222,7 +222,7 @@ class StaticChecker(Visitor, Utils):
                 
                 if TUtils.autoType(ini_typ):
                     ini["type"] = typ
-                    obj[0][name] = {"type": ini_typ, "kind": Variable()}
+                    obj[0][name] = {"type": typ, "kind": Variable()}
                     return
                 
                 if TUtils.autoType(typ):
