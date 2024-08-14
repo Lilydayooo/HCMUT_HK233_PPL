@@ -571,7 +571,7 @@ class StaticChecker(Visitor, Utils):
         
     def visitUnExpr(self, ctx: UnExpr, cont):
         exp = self.visit(ctx.val, cont)
-        oper = self.oper
+        oper = ctx.op
         typ = exp["type"]
 
         if oper == "!":
