@@ -17,12 +17,12 @@ class Sym:
 
 class Array(Type):
     def __init__(self, value: int, element: Type) -> None:
-        self.value = value
-        self.element = element
-    def __str__(self): return "Array({}, {})".format(str(self.value), str(self.element))
+        self.val = value
+        self.el = element
+    def __str__(self): return "Array({}, {})".format(str(self.val), str(self.el))
     @staticmethod
     def getDi(array):
-        if not TUtils.isArray(array):
+        if not TUtils.arrayCheck(array):
             return [array]
         return [array.val, *Array.getDi(array.el)]
     @staticmethod
