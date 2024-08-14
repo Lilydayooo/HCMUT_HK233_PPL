@@ -332,7 +332,7 @@ class StaticChecker(Visitor, Utils):
             left_type = left_expr["type"]
             if TUtils.arrayType(left_type) or TUtils.voidType(left_type): self.raise_(TypeMismatchInStatement(ctx))
         
-        right_expr = self.visit(ctx.rhs, cont)
+        right_expr = self.visit(ctx.rhs, (obj, left_type))
         right_type = right_expr["type"]
         if TUtils.autoType(left_type):
             left_expr["type"] = left_type = right_type
