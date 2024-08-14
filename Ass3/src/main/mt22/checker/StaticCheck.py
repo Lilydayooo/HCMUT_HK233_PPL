@@ -544,17 +544,26 @@ class StaticChecker(Visitor, Utils):
             return {"type": IntegerType()}
         
         if oper == "%":
-            if not TUtils.intType(l_type) or not TUtils.intType(r_type): self.raise_(TypeMismatchInExpression(ctx))
+            if not TUtils.intType(l_type) or not TUtils.intType(r_type): 
+                self.raise_(TypeMismatchInExpression(ctx))
             return {"type": IntegerType()}
         
         if oper == "::":
-            if not TUtils.stringType(l_type) or not TUtils.stringType(r_type): self.raise_(TypeMismatchInExpression(ctx))
+            if not TUtils.stringType(l_type) or not TUtils.stringType(r_type): 
+                self.raise_(TypeMismatchInExpression(ctx))
             return {"type": StringType()}
         
         if oper in ["==", "!="]:
             if not TUtils.inList(l_type, [IntegerType, BooleanType]) or not TUtils.inList(r_type, [IntegerType, BooleanType]):
                 self.raise_(TypeMismatchInExpression(ctx))
             return {"type": BooleanType()}
+        
+        if oper in ["<", ">", "<=", ">="]:
+            if not TUtils.inList(l_type, [IntegerType, FloatType]) or not TUtils.inList(r_type, [IntegerType, FloatType]):
+                self.raise_(TypeMismatchInExpression(ctx))
+            if (TUtils.intType(l_type) and TUtils.intType(r_type)) or (TUtils.floatType(l_type) and TUtils.floatType(r_type)):
+                return {"type": BooleanType()}
+            self.raise_(TypeMismatchInExpression(ctx))
         
         if oper in ["&&", "||"]:
             if not TUtils.boolType(l_type) or not TUtils.boolType(r_type): self.raise_(TypeMismatchInExpression(ctx))
