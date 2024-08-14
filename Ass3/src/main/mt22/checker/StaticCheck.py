@@ -19,8 +19,7 @@ class Array(Type):
     def __init__(self, value: int, element: Type) -> None:
         self.value = value
         self.element = element
-    def __s__(self):
-        return "Array({}, {})".format(str(self.value), str(self.element))
+    def __str__(self): return "Array({}, {})".format(str(self.value), str(self.element))
     @staticmethod
     def getDi(array):
         if not TUtils.isArray(array):
