@@ -395,7 +395,7 @@ class StaticChecker(Visitor, Utils):
         cond_expr = self.visit(ctx.cond, cont)
         cond_type = cond_expr["type"]
         if TUtils.autoType(cond_type): cond_type = cond_expr["type"] = BooleanType()
-        if TUtils.boolType(cond_type): self.raise_(TypeMismatchInStatement(ctx))
+        if not TUtils.boolType(cond_type): self.raise_(TypeMismatchInStatement(ctx))
         self.removeDoWhileEle()
 
     def visitBreakStmt(self, ctx: BreakStmt, cont):
