@@ -608,7 +608,7 @@ class StaticChecker(Visitor, Utils):
         (obj, t) = cont
         exp_list = ctx.explist
 
-        res = list(map[(lambda expr: self.visit(expr, cont), exp_list)])
+        res = list(map(lambda expr: self.visit(expr, cont), exp_list))
 
         if len(res) != 0:
             first_ele_type = res[0]["type"]
