@@ -477,7 +477,7 @@ class StaticChecker(Visitor, Utils):
                 if not TUtils.autoType(ele0_type):
                     if not TUtils.sameTypeCheck(ele0_type, ele_type):
                         self.raise_(TypeMismatchInExpression(ele[1]) if name == "super" else TypeMismatchInStatement(ctx))
-        return {"type": f_type}
+        return {"type": f_type} 
 
     def visitBinExpr(self, ctx: BinExpr, cont):
         (obj, t) = cont
