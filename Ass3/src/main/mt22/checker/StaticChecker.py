@@ -252,7 +252,7 @@ class StaticChecker(Visitor, Utils):
         if name in obj[0]: 
             if obj[0][name]["inherit"]: self.raise_(Invalid(Parameter(), name))
         
-        typ = ctx.name
+        typ = ctx.typ
         inh = ctx.inherit
         out = ctx.out
 
