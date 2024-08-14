@@ -386,7 +386,7 @@ class StaticChecker(Visitor, Utils):
         if not TUtils.boolType(cond_type): self.raise_(TypeMismatchInStatement(ctx))
 
         self.visit(ctx.stmt, cont)
-        self.removeWhileEle
+        self.removeWhileEle()
 
     def visitDoWhileStmt(self, ctx: DoWhileStmt, cont):
         self.addDoWhileEle(True)
