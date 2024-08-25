@@ -3,7 +3,6 @@ from StaticCheck import *
 from StaticError import *
 import CodeGenerator as cgen
 from MachineCode import JasminCode
-from AST import *
 
 
 class Emitter():
@@ -29,11 +28,11 @@ class Emitter():
         elif typeIn is cgen.MType:
             return "(" + "".join(list(map(lambda x: self.getJVMType(x), inType.partype))) + ")" + self.getJVMType(inType.rettype)
         elif typeIn is cgen.ClassType:
-            return "L" + inType.classname.name + ";"
+            return "L" + inType.cname.name + ";"
 
-    def getFullType(inType):
+    def getFullType(self, inType):
         typeIn = type(inType)
-        if typeIn is IntType:
+        if typeIn is IntegerType:
             return "int"
         elif typeIn is BooleanType:
             return "boolean"
@@ -231,13 +230,13 @@ class Emitter():
     *   @param isFinal true in case of constant; false otherwise
     '''
 
-    def emitATTRIBUTE(self, lexeme, in_, isFinal, value):
+    def emitATTRIBUTE(self, lexeme, in_, isFinal = False, value = ""):
         # lexeme: String
         # in_: Type
         # isFinal: Boolean
         # value: String
 
-        return self.jvm.emitSTATICFIELD(lexeme, self.getJVMType(in_), false)
+        return self.jvm.emitSTATICFIELD(lexeme, self.getJVMType(in_), isFinal)
 
     def emitGETSTATIC(self, lexeme, in_, frame):
         # lexeme: String
@@ -335,7 +334,7 @@ class Emitter():
         # frame: Frame
         # ..., value -> ..., result
 
-        if type(in_) is IntType:
+        if type(in_) is IntegerType:
             return self.jvm.emitINEG()
         else:
             return self.jvm.emitFNEG()
@@ -344,15 +343,15 @@ class Emitter():
         # in_: Type
         # frame: Frame
 
-        label1 = frame.getNewLabel()
-        label2 = frame.getNewLabel()
+        label1 = frame.getNewLabel() #true
+        label2 = frame.getNewLabel() #false
         result = list()
-        result.append(emitIFTRUE(label1, frame))
+        result.append(emitIFTRUE(label2, frame))
         result.append(emitPUSHCONST("true", in_, frame))
-        result.append(emitGOTO(label2, frame))
-        result.append(emitLABEL(label1, frame))
-        result.append(emitPUSHCONST("false", in_, frame))
+        result.append(emitGOTO(label1, frame))
         result.append(emitLABEL(label2, frame))
+        result.append(emitPUSHCONST("false", in_, frame))
+        result.append(emitLABEL(label1, frame))
         return ''.join(result)
 
     '''
