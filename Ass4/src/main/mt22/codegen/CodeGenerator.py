@@ -2,60 +2,124 @@ from Emitter import Emitter
 from functools import reduce
 
 from Frame import Frame
-from abc import ABC
+from abc import ABC, abstractmethod
 
 from Utils import *
 from StaticChecker import *
 from StaticError import *
 
+class TUtils:
+    @staticmethod
+    def boolType(ret):
+        return type(ret) is BooleanType
+    @staticmethod
+    def intType(ret):
+        return type(ret) is IntegerType
+    @staticmethod
+    def floatType(ret):
+        return type(ret) is FloatType
+    @staticmethod
+    def autoType(ret):
+        return type(ret) is AutoType
+    @staticmethod
+    def arrayType(ret):
+        return type(ret) is ArrayType
+    @staticmethod
+    def stringType(ret):
+        return type(ret) is StringType
+    @staticmethod
+    def voidType(ret):
+        return type(ret) is VoidType
+    @staticmethod
+    def noneCheck(ret):
+        return type(ret) is type(None)
+    @staticmethod
+    def sameTypeCheck(type1, type2):
+        return type(type1) is type2
+    @staticmethod
+    def isMergeType(left_type, right_type):
+        return FloatType() if FloatType in [type(x) for x in [left_type, right_type]] else IntegerType()
+    @staticmethod
+    def isRetrieveType(origin, lst=[]):
+        if TUtils.arrayType(origin): return ArrayPointerType(origin.typ, lst)
+        return origin
+    
+class OperUtils:
+    @staticmethod
+    def arithmeticOp(oper):
+        return str(oper).lower() in ["+", "-", "*", "/", "%"]
+    @staticmethod
+    def relationalOp(oper):
+        return str(oper).lower() in ["!=", "==", ">", "<", ">=", "<="]
+    @staticmethod
+    def booleanOp(oper):
+        return str(oper).lower() in ["&&", "||"]
+    
+class CodeGenerator(Utils):
+    def __init__(self): self.libName = "io"
+
+    def initial(self):
+        return [
+            Symbol("readInteger", MType([], IntegerType()), CName(self.libName)),
+            Symbol("printInteger", MType([IntegerType()], VoidType()), CName(self.libName)),
+            Symbol("readFloat", MType([], FloatType()), CName(self.libName)),
+            Symbol("writeFloat", MType([FloatType()], VoidType()), CName(self.libName)),
+            Symbol("readBoolean", MType([], BooleanType()), CName(self.libName)),
+            Symbol("printBoolean", MType([BooleanType()], VoidType()), CName(self.libName)),
+            Symbol("readString", MType([], StringType()), CName(self.libName)),
+            Symbol("printString", MType([StringType()], VoidType()), CName(self.libName)),
+        ]
+    
+    def gen(self, ast, directory):
+        glo = self.initial()
+        gloc = CodeGenVisitor(ast, glo, directory)
+        gloc.visit(ast, None)
 
 class MType:
-    def __init__(self, partype, rettype):
+    def __init__(self, partype, rettype, par = [], par_inherit = []):
         self.partype = partype
         self.rettype = rettype
+        self.params = par
+        self.params_inherit = par_inherit
 
 
 class Symbol:
-    def __init__(self, name, mtype, value=None):
+    def __init__(self, name, mtype, val=None, inh = None):
         self.name = name
         self.mtype = mtype
-        self.value = value
-
-    def __str__(self):
-        return "Symbol(" + self.name + "," + str(self.mtype) + ")"
-
-
-class CodeGenerator:
-    def __init__(self):
-        self.libName = "io"
-
-    def init(self):
-        return [Symbol("readInteger", MType(list(), IntegerType()), CName(self.libName)),
-                Symbol("printInteger", MType([IntegerType()],
-                       VoidType()), CName(self.libName))
-                ]
-
-    def gen(self, ast, path):
-        # ast: AST
-        # dir_: String
-
-        gl = self.init()
-        gc = CodeGenVisitor(ast, gl, path)
-        gc.visit(ast, None)
+        self.value = val
+        self.inherit = inh
 
 
 class SubBody():
-    def __init__(self, frame, sym):
+    def __init__(self, frame, sym, glob = False, blockStmt = False, inh = False):
         self.frame = frame
         self.sym = sym
+        self.isGlobal = glob
+        self.isBlockStmt = blockStmt
+        self.inherit = inh
 
 
 class Access():
-    def __init__(self, frame, sym, isLeft, isFirst=False):
+    def __init__(self, frame, sym, isLeft, isFirst, arr=list()):
         self.frame = frame
         self.sym = sym
         self.isLeft = isLeft
         self.isFirst = isFirst
+        self.arr = arr
+
+class CType(Type):
+    def __init__(self, classname):
+        self.cname = classname
+
+    def __str__(self): return "Class({0})".format(str(self.cname))
+
+class ArrayPointerType(Type):
+    def __init__(self, classType, lst = []):
+        self.eleType = classType
+        self.lst = lst
+
+    def __str__(self): return "Class({0}, [{1}])".format(str(self.eleType),",",join(str(element) for element in self.lst))
 
 
 class Val(ABC):
