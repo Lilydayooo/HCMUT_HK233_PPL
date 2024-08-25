@@ -1,6 +1,6 @@
 from Utils import *
-# from StaticCheck import *
-# from StaticError import *
+from StaticCheck import *
+from StaticError import *
 import CodeGenerator as cgen
 from MachineCode import JasminCode
 from AST import *
@@ -14,23 +14,31 @@ class Emitter():
 
     def getJVMType(self, inType):
         typeIn = type(inType)
-        if typeIn is IntType:
+        if typeIn is IntegerType:
             return "I"
+        elif typeIn is BooleanType:
+            return "Z"
+        elif typeIn is FloatType:
+            return "F"
         elif typeIn is StringType:
             return "Ljava/lang/String;"
         elif typeIn is VoidType:
             return "V"
-        elif typeIn is ArrayType:
+        elif typeIn is cgen.ArrayPointerType:
             return "[" + self.getJVMType(inType.eleType)
         elif typeIn is cgen.MType:
             return "(" + "".join(list(map(lambda x: self.getJVMType(x), inType.partype))) + ")" + self.getJVMType(inType.rettype)
-        elif typeIn is ClassType:
+        elif typeIn is cgen.ClassType:
             return "L" + inType.classname.name + ";"
 
     def getFullType(inType):
         typeIn = type(inType)
         if typeIn is IntType:
             return "int"
+        elif typeIn is BooleanType:
+            return "boolean"
+        elif typeIn is FloatType:
+            return "float"
         elif typeIn is StringType:
             return "java/lang/String"
         elif typeIn is VoidType:
@@ -49,6 +57,7 @@ class Emitter():
                 return self.jvm.emitBIPUSH(i)
             elif i >= -32768 and i <= 32767:
                 return self.jvm.emitSIPUSH(i)
+            return self.jvm.emitLDC(str(i))
         elif type(in_) is str:
             if in_ == "true":
                 return self.emitPUSHICONST(1, frame)
@@ -80,11 +89,13 @@ class Emitter():
         # typ: Type
         # frame: Frame
 
-        if type(typ) is IntType:
+        if type(typ) in [BooleanType, IntegerType]:
             return self.emitPUSHICONST(in_, frame)
         elif type(typ) is StringType:
             frame.push()
-            return self.jvm.emitLDC(in_)
+            return self.jvm.emitLDC(f"\"in_\"")
+        elif type(typ) is FloatType:
+            return self.emitPUSHFCONST(in_, frame)
         else:
             raise IllegalOperandException(in_)
 
@@ -96,10 +107,14 @@ class Emitter():
         # ..., arrayref, index, value -> ...
 
         frame.pop()
-        if type(in_) is IntType:
+        if type(in_) is IntegerType:
             return self.jvm.emitIALOAD()
+        elif type(in_) is FloatType:
+            return self.jvm.emitFALOAD()
+        elif type(in_) is BooleanType:
+            return self.jvm.emitBALOAD()
         # elif type(in_) is cgen.ArrayPointerType or type(in_) is cgen.ClassType or type(in_) is StringType:
-        elif type(in_) is ClassType or type(in_) is StringType:
+        elif type(in_) in [cgen.ClassType, StringType, cgen.ArrayPointerType]:
             return self.jvm.emitAALOAD()
         else:
             raise IllegalOperandException(str(in_))
@@ -112,10 +127,14 @@ class Emitter():
         frame.pop()
         frame.pop()
         frame.pop()
-        if type(in_) is IntType:
+        if type(in_) is IntegerType:
             return self.jvm.emitIASTORE()
         # elif type(in_) is cgen.ArrayPointerType or type(in_) is cgen.ClassType or type(in_) is StringType:
-        elif type(in_) is ClassType or type(in_) is StringType:
+        elif type(in_) is FloatType:
+            return self.jvm.emitFASTORE()
+        elif type(in_) is BooleanType:
+            return self.jvm.emitBASTORE()
+        elif type(in_) in [cgen.ClassType, StringType, cgen.ArrayPointerType]:
             return self.jvm.emitAASTORE()
         else:
             raise IllegalOperandException(str(in_))
@@ -146,11 +165,13 @@ class Emitter():
         # ... -> ..., value
 
         frame.push()
-        if type(inType) is IntType:
+        if type(inType) in [BooleanType, IntegerType]:
             return self.jvm.emitILOAD(index)
         # elif type(inType) is cgen.ArrayPointerType or type(inType) is cgen.ClassType or type(inType) is StringType:
-        elif type(inType) is ClassType or type(inType) is StringType:
+        elif type(inType) is cgen.ClassType or type(inType) is StringType or type(inType) is cgen.ArrayPointerType:
             return self.jvm.emitALOAD(index)
+        elif type(inType) is FloatType:
+            return self.jvm.emitFLOAD(index)
         else:
             raise IllegalOperandException(name)
 
@@ -181,11 +202,13 @@ class Emitter():
 
         frame.pop()
 
-        if type(inType) is IntType:
+        if type(inType) is IntegerType or type(inType) is BooleanType:
             return self.jvm.emitISTORE(index)
-        # elif type(inType) is cgen.ArrayPointerType or type(inType) is cgen.ClassType or type(inType) is StringType:
-        elif type(inType) is ClassType or type(inType) is StringType:
+        elif type(inType) is cgen.ArrayPointerType or type(inType) is cgen.ClassType or type(inType) is StringType:
+        # elif type(inType) is ClassType or type(inType) is StringType:
             return self.jvm.emitASTORE(index)
+        elif type(inType) is FloatType:
+            return self.jvm.emitFSTORE(index)
         else:
             raise IllegalOperandException(name)
 
@@ -346,12 +369,12 @@ class Emitter():
 
         frame.pop()
         if lexeme == "+":
-            if type(in_) is IntType:
+            if type(in_) is IntegerType:
                 return self.jvm.emitIADD()
             else:
                 return self.jvm.emitFADD()
         else:
-            if type(in_) is IntType:
+            if type(in_) is IntegerType:
                 return self.jvm.emitISUB()
             else:
                 return self.jvm.emitFSUB()
@@ -370,12 +393,12 @@ class Emitter():
 
         frame.pop()
         if lexeme == "*":
-            if type(in_) is IntType:
+            if type(in_) is IntegerType:
                 return self.jvm.emitIMUL()
             else:
                 return self.jvm.emitFMUL()
         else:
-            if type(in_) is IntType:
+            if type(in_) is IntegerType:
                 return self.jvm.emitIDIV()
             else:
                 return self.jvm.emitFDIV()
@@ -419,28 +442,38 @@ class Emitter():
         # ..., value1, value2 -> ..., result
 
         result = list()
+        checkFloat = type(in_) is FloatType
         labelF = frame.getNewLabel()
         labelO = frame.getNewLabel()
 
         frame.pop()
         frame.pop()
+
+        if checkFloat: result.append(self.jvm.emitFCMPL())
+
         if op == ">":
-            result.append(self.jvm.emitIFICMPLE(labelF))
+            if checkFloat: result.append(self.jvm.emitIFLE(labelF))
+            else: result.append(self.jvm.emitIFICMPLE(labelF))
         elif op == ">=":
-            result.append(self.jvm.emitIFICMPLT(labelF))
+            if checkFloat: result.append(self.jvm.emitIFLT(labelF))
+            else: result.append(self.jvm.emitIFICMPLT(labelF))
         elif op == "<":
-            result.append(self.jvm.emitIFICMPGE(labelF))
+            if checkFloat: result.append(self.jvm.emitIFGE(labelF))
+            else: result.append(self.jvm.emitIFICMPGE(labelF))
         elif op == "<=":
-            result.append(self.jvm.emitIFICMPGT(labelF))
+            if checkFloat: result.append(self.jvm.emitIFGT(labelF))
+            else: result.append(self.jvm.emitIFICMPGT(labelF))
         elif op == "!=":
-            result.append(self.jvm.emitIFICMPEQ(labelF))
+            if checkFloat: result.append(self.jvm.emitIFEQ(labelF))
+            else: result.append(self.jvm.emitIFICMPEQ(labelF))
         elif op == "==":
-            result.append(self.jvm.emitIFICMPNE(labelF))
-        result.append(self.emitPUSHCONST("1", IntType(), frame))
+            if checkFloat: result.append(self.jvm.emitIFNE(labelF))
+            else: result.append(self.jvm.emitIFICMPNE(labelF))
+        result.append(self.emitPUSHCONST("1", IntegerType(), frame))
         frame.pop()
         result.append(self.emitGOTO(labelO, frame))
         result.append(self.emitLABEL(labelF, frame))
-        result.append(self.emitPUSHCONST("0", IntType(), frame))
+        result.append(self.emitPUSHCONST("0", IntegerType(), frame))
         result.append(self.emitLABEL(labelO, frame))
         return ''.join(result)
 
@@ -458,7 +491,6 @@ class Emitter():
         frame.pop()
         if op == ">":
             result.append(self.jvm.emitIFICMPLE(falseLabel))
-            result.append(self.emitGOTO(trueLabel))
         elif op == ">=":
             result.append(self.jvm.emitIFICMPLT(falseLabel))
         elif op == "<":
@@ -501,7 +533,7 @@ class Emitter():
     def getConst(self, ast):
         # ast: Literal
         if type(ast) is IntLiteral:
-            return (str(ast.value), IntType())
+            return (str(ast.value), IntegerType())
 
     '''   generate code to initialize a local array variable.<p>
     *   @param index the index of the local variable.
@@ -590,11 +622,16 @@ class Emitter():
         # in_: Type
         # frame: Frame
 
-        if type(in_) is IntType:
+        if type(in_) is IntegerType or type(in_) is BooleanType:
             frame.pop()
             return self.jvm.emitIRETURN()
+        elif type(in_) is FloatType:
+            frame.pop()
+            return self.jvm.emitFRETURN()
         elif type(in_) is VoidType:
             return self.jvm.emitRETURN()
+        frame.pop()
+        return self.jvm.emitARETURN()
 
     ''' generate code that represents a label	
     *   @param label the label
@@ -660,3 +697,16 @@ class Emitter():
 
     def clearBuff(self):
         self.buff.clear()
+
+    def emitInitNewArray(self, ob: dict, size: int, elType: Type, frame, arr_code: str = ""):
+        res = []
+        res.append(self.emitPUSHICONST(size, frame))
+        if type(elType) is StringType:
+            res.append(self.jvm.emitANEWARRAY(self.getFullType(elType)))
+        else:
+            res.append(self.jvm.emitNEWARRAY(self.getFullType(elType)))
+        res.append(arr_code)
+        if ob["isStatic"]: res.append(self.jvm.emitPUTSTATIC(ob["name"], self.getJVMType(cgen.ArrayPointerType(elType))))
+        else: res.append(self.jvm.emitASTORE(ob["idx"]))
+        frame.pop()
+        return ''.join(res)
