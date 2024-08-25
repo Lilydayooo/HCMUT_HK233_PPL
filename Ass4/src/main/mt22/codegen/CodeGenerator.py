@@ -3,8 +3,10 @@ from functools import reduce
 
 from Frame import Frame
 from abc import ABC
-from Visitor import *
-from AST import *
+
+from Utils import *
+from StaticChecker import *
+from StaticError import *
 
 
 class MType:
