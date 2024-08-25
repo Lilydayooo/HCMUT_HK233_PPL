@@ -28,7 +28,7 @@ class Emitter():
         elif typeIn is cgen.MType:
             return "(" + "".join(list(map(lambda x: self.getJVMType(x), inType.partype))) + ")" + self.getJVMType(inType.rettype)
         elif typeIn is cgen.ClassType:
-            return "L" + inType.cname.name + ";"
+            return "L" + inType.cname + ";"
 
     def getFullType(self, inType):
         typeIn = type(inType)
