@@ -1,0 +1,16 @@
+
+
+        x: integer;
+
+        foo2: function float(inherit z: float) inherit foo1{
+            preventDefault();
+            y: float = 10.1;
+            return 1;
+        }
+
+        foo1: function integer(inherit y: integer){}
+
+        main: function void(){
+            x: integer = readInteger();
+        }
+    
