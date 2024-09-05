@@ -136,11 +136,31 @@ class CName(Val):
         self.value = value
 
 
-class CodeGenVisitor(BaseVisitor):
+class CodeGenVisitor(BaseVisitor, Utils):
     def __init__(self, astTree, env, path):
         self.astTree = astTree
         self.env = env
         self.path = path
+        self.className = "MT22Class"
+        self.emitter = Emitter(self.path + "/MT22Class.j")
+        self.array_index_glb = 0
+
+    def genMETHOD(self, declare: FuncDecl, symbol, frm: Frame, glb_vardecl: list or None):
+        f_name = declare.name
+        f_type = declare.return_type
+        inh = declare.inherit
+        blk = declare.body
+
+        initial = TUtils.noneCheck(f_type) and f_name == "<init>"
+        classInitial = TUtils.noneCheck(f_type) and f_name == "<clinit>"
+        main = f_name == "main" and len(declare.params) == 0 and TUtils.voidType(f_type)
+        r_type = VoidType() if initial or classInitial else TUtils.isRetrieveType(f_type)
+        ifProc = TUtils.voidType(r_type)
+
+        i_type = [ArrayPointerType(StringType())] if main else [TUtils.isRetrieveType(param.typ) for param in declare.params]
+        m_type = MTyp(i_type, r_type, list(map(lambda par: [par.name, par.typ, par.inherit], declare.params)), [list(map(lambda par: [par.name, par.typ, par.inherit, None], declare.params))])
+
+        self.emit.printout(self.emit.emitMETHOD(f_name, m_type, not initial, frm))
 
     def visitProgram(self, ast, c):
         [self.visit(i, c)for i in ast.decl]
@@ -158,51 +178,6 @@ class CodeGenVisitor(BaseVisitor):
         ), None, Block([], [])), c, Frame("<init>", VoidType()))
         self.emit.emitEPILOG()
         return c
-
-    def genMETHOD(self, consdecl, o, frame):
-        isInit = consdecl.returnType is None
-        isMain = consdecl.name.name == "main" and len(
-            consdecl.param) == 0 and type(consdecl.returnType) is VoidType
-        returnType = VoidType() if isInit else consdecl.returnType
-        methodName = "<init>" if isInit else consdecl.name.name
-        intype = [ArrayType(0, StringType())] if isMain else list(
-            map(lambda x: x.typ, consdecl.param))
-        mtype = MType(intype, returnType)
-
-        self.emit.printout(self.emit.emitMETHOD(
-            methodName, mtype, not isInit, frame))
-
-        frame.enterScope(True)
-
-        glenv = o
-
-        # Generate code for parameter declarations
-        if isInit:
-            self.emit.printout(self.emit.emitVAR(frame.getNewIndex(), "this", ClassType(
-                Id(self.className)), frame.getStartLabel(), frame.getEndLabel(), frame))
-        elif isMain:
-            self.emit.printout(self.emit.emitVAR(frame.getNewIndex(), "args", ArrayType(
-                0, StringType()), frame.getStartLabel(), frame.getEndLabel(), frame))
-        else:
-            local = reduce(lambda env, ele: SubBody(
-                frame, [self.visit(ele, env)]+env.sym), consdecl.param, SubBody(frame, []))
-            glenv = local.sym+glenv
-
-        body = consdecl.body
-        self.emit.printout(self.emit.emitLABEL(frame.getStartLabel(), frame))
-
-        # Generate code for statements
-        if isInit:
-            self.emit.printout(self.emit.emitREADVAR(
-                "this", ClassType(Id(self.className)), 0, frame))
-            self.emit.printout(self.emit.emitINVOKESPECIAL(frame))
-        list(map(lambda x: self.visit(x, SubBody(frame, glenv)), body.stmt))
-
-        self.emit.printout(self.emit.emitLABEL(frame.getEndLabel(), frame))
-        if type(returnType) is VoidType:
-            self.emit.printout(self.emit.emitRETURN(VoidType(), frame))
-        self.emit.printout(self.emit.emitENDMETHOD(frame))
-        frame.exitScope()
 
     def visitFuncDecl(self, ast, o):
         frame = Frame(ast.name, ast.returnType)

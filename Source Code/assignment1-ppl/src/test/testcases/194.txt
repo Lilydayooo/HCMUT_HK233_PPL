@@ -1,0 +1,5 @@
+
+mod: function integer (num: array [5] of integer , a: integer) {
+  res, i : integer  = 0, -1;
+  return res;
+}

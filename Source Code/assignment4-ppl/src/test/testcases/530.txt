@@ -1,0 +1,10 @@
+
+    x: integer = 1;
+    y: float = 100.3243 + x;
+    arr : array [2] of integer = {0, x};
+    main: function void(){
+        arr3 : array [2, 3, 2] of float = {{{1, 3}, {12, 13}, {123, 321}}, {{2, 41}, {123, 123}, {923, 32}}};
+        arr3[0, 0, 1] = y;
+        writeFloat(arr3[0, 0, 1] + arr3[0, 1, 1]);
+        writeFloat(arr3[0, 0, x] + arr3[0, 1, arr[1]]);
+    }

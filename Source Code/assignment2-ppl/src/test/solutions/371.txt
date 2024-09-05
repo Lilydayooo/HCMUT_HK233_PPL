@@ -1,0 +1,3 @@
+Program([
+	FuncDecl(Checkzero, BooleanType, [Param(nums, ArrayType([100], IntegerType)), Param(size, IntegerType)], None, BlockStmt([VarDecl(found, BooleanType, BooleanLit(False)), ForStmt(AssignStmt(Id(i), IntegerLit(0)), BinExpr(<, Id(i), BinExpr(&&, Id(size), UnExpr(!, Id(found)))), BinExpr(+, Id(i), IntegerLit(1)), BlockStmt([IfStmt(BinExpr(==, ArrayCell(nums, [Id(i)]), IntegerLit(0)), AssignStmt(Id(found), BooleanLit(True)))])), IfStmt(Id(found), ReturnStmt(BooleanLit(True)), ReturnStmt(BooleanLit(False)))]))
+])
