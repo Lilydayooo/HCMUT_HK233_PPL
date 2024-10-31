@@ -1,4 +1,4 @@
-# HCMUT - Principals of Programming Languages - CO3005
+# HCMUT - Principal of Programming Languages - CO3005
 
 ## English:
 ### IMPORTANT
