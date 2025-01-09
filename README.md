@@ -11,12 +11,12 @@
 - There will be 2 exams through out the course, Midterm and Final. Each of them will also have Harmony for said Assignments, most of the time Harmony for Assignment 1 and 2 is in Midterm and the rest is in Final.
 
 ### Advices:
-- Do your best on your first and second assignments as they're the easiest, same for Midterm Exam. They will 100% decide whether you pass this subject or not. If you do bad up until Midterm, then just give up.
-- For real though, just give up, unless you study your butt off because Assignment 3 (and 4 if any) and Final Exam is ridiculously hard.
+- Do your best on your first and second assignments as they're the easiest, same for Midterm Exam. They will 100% decide whether you pass this subject or not. If you did bad up until Midterm, then just give up.
+- For real though, just give up, unless you study your butt off since Assignment 3 (and 4 if any) and Final Exam are ridiculously hard.
 
 ## Tiếng Việt:
 ### QUAN TRỌNG:
-- Code này CHỈ dành cho tham khảo, người sử dụng KHÔNG NÊN copy theo bỏi vì bạn tìm ra code nãy cũng có nghĩa là người khác cũng đã tìm ra.
+- Code này CHỈ dành cho tham khảo, người sử dụng KHÔNG NÊN copy theo bởi vì bạn tìm ra code nãy cũng có nghĩa là người khác cũng đã tìm ra.
 - Cho dù bạn có copy code thì Giảng viên cũng sẽ có cách kiểm tra gian lận và Các bài kiểm tra cũng có Harmony nên bất kể ra sao thì bạn cũng BẮT BUỘC phải học.
 
 ### Ghi chú:
@@ -26,4 +26,4 @@
 
 ### Lời khuyên:
 - Hãy làm thật tốt Assignment 1 và 2 bởi vì 2 bài này là dễ nhất, đồng thời cho cả bài Giữa kỳ. 2 bài này và bài Giữa kỳ sẽ quyết định liệu bạn có qua môn hay không. Nếu bạn làm tệ thì nên rút môn.
-- Không đùa, rút thật đi, trừ khi bạn cày ngày cày đêm vì Assignment 3 (và 4 nếu có) và bài Cuối kỳ rất rất rất rất rất là khó.
+- Không đùa, trừ khi bạn cày ngày cày đêm vì Assignment 3 (và 4 nếu có) và bài Cuối kỳ rất rất rất rất rất là khó.
